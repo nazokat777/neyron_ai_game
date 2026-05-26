@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-24T00:00:00Z",
+  "title": "Design System: Neyron AI",
+  "extensions": {
+    "colorMeta": {
+      "cosmic-deep": {
+        "role": "neutral",
+        "displayName": "Cosmic Deep",
+        "canonical": "oklch(18% 0.04 250)",
+        "tonalRamp": [
+          "oklch(10% 0.03 250)",
+          "oklch(15% 0.04 250)",
+          "oklch(22% 0.04 250)",
+          "oklch(30% 0.05 250)",
+          "oklch(40% 0.05 250)",
+          "oklch(55% 0.05 250)",
+          "oklch(72% 0.04 250)",
+          "oklch(90% 0.02 250)"
+        ]
+      },
+      "cosmic-mid": {
+        "role": "neutral",
+        "displayName": "Cosmic Mid",
+        "canonical": "oklch(28% 0.05 250)",
+        "tonalRamp": [
+          "oklch(14% 0.04 250)",
+          "oklch(22% 0.05 250)",
+          "oklch(28% 0.05 250)",
+          "oklch(38% 0.05 250)",
+          "oklch(50% 0.05 250)",
+          "oklch(65% 0.04 250)",
+          "oklch(80% 0.03 250)",
+          "oklch(94% 0.015 250)"
+        ]
+      },
+      "cosmic-light": {
+        "role": "neutral",
+        "displayName": "Cosmic Light",
+        "canonical": "oklch(38% 0.05 250)",
+        "tonalRamp": [
+          "oklch(18% 0.04 250)",
+          "oklch(28% 0.05 250)",
+          "oklch(38% 0.05 250)",
+          "oklch(50% 0.05 250)",
+          "oklch(62% 0.05 250)",
+          "oklch(75% 0.04 250)",
+          "oklch(86% 0.03 250)",
+          "oklch(96% 0.012 250)"
+        ]
+      },
+      "neuron-green": {
+        "role": "primary",
+        "displayName": "Neuron Green",
+        "canonical": "oklch(83% 0.18 165)",
+        "tonalRamp": [
+          "oklch(22% 0.08 165)",
+          "oklch(35% 0.12 165)",
+          "oklch(48% 0.16 165)",
+          "oklch(60% 0.18 165)",
+          "oklch(72% 0.18 165)",
+          "oklch(83% 0.18 165)",
+          "oklch(92% 0.12 165)",
+          "oklch(97% 0.04 165)"
+        ]
+      },
+      "plasma-yellow": {
+        "role": "secondary",
+        "displayName": "Plasma Yellow",
+        "canonical": "oklch(89% 0.16 92)",
+        "tonalRamp": [
+          "oklch(30% 0.08 92)",
+          "oklch(45% 0.12 92)",
+          "oklch(60% 0.15 92)",
+          "oklch(72% 0.16 92)",
+          "oklch(82% 0.17 92)",
+          "oklch(89% 0.16 92)",
+          "oklch(94% 0.10 92)",
+          "oklch(98% 0.03 92)"
+        ]
+      },
+      "accent-red": {
+        "role": "tertiary",
+        "displayName": "Accent Red",
+        "canonical": "oklch(67% 0.22 25)",
+        "tonalRamp": [
+          "oklch(22% 0.10 25)",
+          "oklch(35% 0.16 25)",
+          "oklch(48% 0.20 25)",
+          "oklch(58% 0.22 25)",
+          "oklch(67% 0.22 25)",
+          "oklch(78% 0.18 25)",
+          "oklch(88% 0.10 25)",
+          "oklch(96% 0.03 25)"
+        ]
+      },
+      "pure-white": {
+        "role": "neutral",
+        "displayName": "Pure White",
+        "canonical": "oklch(98% 0.005 250)",
+        "tonalRamp": [
+          "oklch(72% 0.01 250)",
+          "oklch(80% 0.008 250)",
+          "oklch(86% 0.007 250)",
+          "oklch(90% 0.006 250)",
+          "oklch(94% 0.005 250)",
+          "oklch(96% 0.005 250)",
+          "oklch(98% 0.005 250)",
+          "oklch(99% 0.003 250)"
+        ]
+      },
+      "bobo-warmth": {
+        "role": "tertiary",
+        "displayName": "Bobo Warmth",
+        "canonical": "oklch(78% 0.10 50)",
+        "tonalRamp": [
+          "oklch(30% 0.05 50)",
+          "oklch(45% 0.07 50)",
+          "oklch(58% 0.09 50)",
+          "oklch(68% 0.10 50)",
+          "oklch(78% 0.10 50)",
+          "oklch(86% 0.08 50)",
+          "oklch(92% 0.05 50)",
+          "oklch(97% 0.02 50)"
+        ]
+      },
+      "uchqun-glow": {
+        "role": "tertiary",
+        "displayName": "Uchqun Glow",
+        "canonical": "oklch(86% 0.10 220)",
+        "tonalRamp": [
+          "oklch(30% 0.06 220)",
+          "oklch(45% 0.08 220)",
+          "oklch(60% 0.10 220)",
+          "oklch(72% 0.10 220)",
+          "oklch(80% 0.10 220)",
+          "oklch(86% 0.10 220)",
+          "oklch(92% 0.07 220)",
+          "oklch(97% 0.03 220)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Top-of-screen greetings in onboarding flows. Used once per screen at most."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "AppBar titles, second-level section headings. Never paired with Display on the same screen."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, button labels, component headings. The everyday emphasis weight."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading size for chat, onboarding paragraphs, descriptive copy. Generous line-height for Cyrillic ascenders."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Captions, meta-info, level indicators, unselected nav labels. Used in cosmic-light most of the time. Never for actionable text."
+      }
+    },
+    "shadows": [
+      {
+        "name": "character-glow-warm",
+        "value": "0 0 20px 2px rgba(232,168,124,0.4)",
+        "purpose": "Bobo Aql avatar warm glow. Diegetic, not UI elevation. Reserved for the Bobo avatar."
+      },
+      {
+        "name": "character-glow-cool",
+        "value": "0 0 20px 4px rgba(127,219,255,0.8)",
+        "purpose": "Uchqun core cyan glow at full intensity. Scales with the level prop. Reserved for the Uchqun widget."
+      },
+      {
+        "name": "neural-spark",
+        "value": "0 0 4px rgba(0,229,160,0.5)",
+        "purpose": "Small neuron-green dots in the Uchqun ring. Subtle ambient glow."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 2px rgba(0,229,160,0.6)",
+        "purpose": "Focus state on inputs and pressable surfaces. 2px ring, no outline-offset gap."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Default easing for state transitions and entrances. Soft, decelerating, never bouncy."
+      },
+      {
+        "name": "ease-character-breath",
+        "value": "cubic-bezier(0.42, 0, 0.58, 1)",
+        "purpose": "ease-in-out for the slow breathing scale (1.0 → 1.03) on character widgets."
+      },
+      {
+        "name": "duration-quick",
+        "value": "120ms",
+        "purpose": "Press scale, immediate state feedback."
+      },
+      {
+        "name": "duration-standard",
+        "value": "300ms",
+        "purpose": "Fade-in / slide-in for cards and bubbles entering."
+      },
+      {
+        "name": "duration-entrance",
+        "value": "600ms",
+        "purpose": "First-paint entrance choreography on Planet screen."
+      },
+      {
+        "name": "duration-breath",
+        "value": "3000ms",
+        "purpose": "Bobo Aql avatar slow breathing cycle. Reverses, repeats."
+      }
+    ],
+    "breakpoints": [
+      { "name": "phone-portrait", "value": "0px" },
+      { "name": "phone-large", "value": "414px" },
+      { "name": "tablet-portrait", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single flooded-green surface in the system. Used for primary actions only.",
+      "html": "<button class=\"ds-btn-primary\">Sayohatni boshlash</button>",
+      "css": ".ds-btn-primary { background: #00E5A0; color: #0A1628; padding: 14px 24px; font-family: Inter, -apple-system, system-ui, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.4; border: none; border-radius: 16px; cursor: pointer; transition: transform 120ms cubic-bezier(0.25, 1, 0.5, 1), opacity 120ms; } .ds-btn-primary:hover { transform: translateY(-1px); } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(0,229,160,0.6); } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Card Surface",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "The default card surface. Cosmic-mid fill on the cosmic gradient backdrop. No shadow, no border.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Uchqun</h3><p class=\"ds-card-body\">Daraja: 47 / 100</p></div>",
+      "css": ".ds-card { background: #1A2942; color: #F7F9FC; padding: 20px; border-radius: 24px; font-family: Inter, -apple-system, system-ui, sans-serif; } .ds-card-title { margin: 0 0 8px 0; font-size: 16px; font-weight: 600; line-height: 1.4; color: #7FDBFF; } .ds-card-body { margin: 0; font-size: 13px; font-weight: 400; line-height: 1.4; color: #2D3E5C; }"
+    },
+    {
+      "name": "Bobo Greeting Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "The entry point to the Bobo Aql chat. Bobo-warmth border at 20% alpha reads as warm lantern light spilling onto a cosmic surface.",
+      "html": "<div class=\"ds-bobo-card\"><div class=\"ds-bobo-avatar\">🧙‍♂️</div><div class=\"ds-bobo-text\"><div class=\"ds-bobo-label\">Bobo Aql</div><div class=\"ds-bobo-msg\">Ohoo, Aziz! Choy qo'yib qo'yibman.<br>Kel, suhbatlashamiz...</div></div><div class=\"ds-bobo-chevron\">›</div></div>",
+      "css": ".ds-bobo-card { display: flex; align-items: center; gap: 16px; padding: 20px; background: #1A2942; border: 1px solid rgba(232,168,124,0.2); border-radius: 24px; font-family: Inter, -apple-system, system-ui, sans-serif; color: #F7F9FC; cursor: pointer; transition: transform 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-bobo-card:hover { transform: translateY(-1px); } .ds-bobo-avatar { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle, #E8A87C 0%, #1A2942 100%); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 0 0 20px 2px rgba(232,168,124,0.4); flex-shrink: 0; } .ds-bobo-text { flex: 1; min-width: 0; } .ds-bobo-label { color: #E8A87C; font-size: 14px; font-weight: 600; margin-bottom: 4px; } .ds-bobo-msg { font-size: 15px; line-height: 1.4; } .ds-bobo-chevron { color: #2D3E5C; font-size: 20px; flex-shrink: 0; }"
+    },
+    {
+      "name": "Filled Input",
+      "kind": "input",
+      "refersTo": "input-filled",
+      "description": "Filled text input on a cosmic-mid background. No visible border at rest. Focus shows a neuron-green ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Bobo Aqlga yozing...\" />",
+      "css": ".ds-input { display: block; width: 100%; box-sizing: border-box; background: #1A2942; color: #F7F9FC; font-family: Inter, -apple-system, system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.5; padding: 18px 16px; border: none; border-radius: 16px; outline: none; transition: box-shadow 120ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-input::placeholder { color: #2D3E5C; } .ds-input:focus-visible { box-shadow: 0 0 0 2px rgba(0,229,160,0.6); }"
+    },
+    {
+      "name": "Streak Badge Pill",
+      "kind": "chip",
+      "refersTo": "badge-pill",
+      "description": "Streak / coin counters at the top of the Planet screen. Tinted-border pill in the role color, never floods.",
+      "html": "<div class=\"ds-pill\"><span class=\"ds-pill-icon\">🔥</span><span class=\"ds-pill-text\">12 kun</span></div>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #1A2942; border: 1px solid rgba(255,217,61,0.3); border-radius: 20px; font-family: Inter, -apple-system, system-ui, sans-serif; } .ds-pill-icon { font-size: 18px; line-height: 1; } .ds-pill-text { color: #FFD93D; font-size: 16px; font-weight: 600; }"
+    },
+    {
+      "name": "Bobo Chat Bubble",
+      "kind": "custom",
+      "refersTo": "bubble-bobo",
+      "description": "Bobo's spoken-from-the-left chat bubble. Asymmetric corner toward the avatar, warm-tinted border, cosmic-mid fill.",
+      "html": "<div class=\"ds-bubble-bobo\">Salomatlik haqida bir narsa aytay. Miyangiz uchun eng yaxshi narsa — uyqu, sevgi, va ozgina hayratlanish.</div>",
+      "css": ".ds-bubble-bobo { display: inline-block; max-width: 72%; padding: 12px 16px; background: #1A2942; color: #F7F9FC; border: 1px solid rgba(232,168,124,0.2); border-radius: 18px 18px 18px 4px; font-family: Inter, -apple-system, system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.4; }"
+    },
+    {
+      "name": "User Chat Bubble",
+      "kind": "custom",
+      "refersTo": "bubble-user",
+      "description": "The user's reply bubble. Neuron-green tint at 20% alpha, asymmetric corner pointing right.",
+      "html": "<div class=\"ds-bubble-user\">Bugun ozgina charchadim. Nima qilsam yaxshi?</div>",
+      "css": ".ds-bubble-user { display: inline-block; max-width: 72%; padding: 12px 16px; background: rgba(0,229,160,0.2); color: #00E5A0; border-radius: 18px 18px 4px 18px; font-family: Inter, -apple-system, system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.4; }"
+    },
+    {
+      "name": "Bottom Tab Bar",
+      "kind": "nav",
+      "refersTo": "nav-bottom",
+      "description": "Five-tab bottom navigation. Cosmic-mid fill, hairline top divider, labels always visible, neuron-green on active.",
+      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-item ds-nav-active\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20\"/></svg><span>Sayyora</span></button><button class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M9 3h6M9 13h6\"/></svg><span>Laboratoriya</span></button><button class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22c5-3 8-7 8-12a8 8 0 0 0-16 0c0 5 3 9 8 12z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg><span>Bog'lar</span></button><button class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M8 21h8M12 17v4M6 3h12v6a6 6 0 0 1-12 0zM6 5H3v3a3 3 0 0 0 3 3M18 5h3v3a3 3 0 0 1-3 3\"/></svg><span>Akademiya</span></button><button class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg><span>Pasport</span></button></nav>",
+      "css": ".ds-nav { display: flex; background: #1A2942; border-top: 1px solid rgba(45,62,92,0.4); padding: 8px 0 12px; font-family: Inter, -apple-system, system-ui, sans-serif; } .ds-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 6px 4px; color: #2D3E5C; font-size: 13px; font-weight: 400; line-height: 1.4; cursor: pointer; transition: color 120ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-nav-item:hover { color: #F7F9FC; } .ds-nav-active { color: #00E5A0; } .ds-nav-active:hover { color: #00E5A0; }"
+    },
+    {
+      "name": "Uchqun Widget",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature component: the user's brain made visible. Glowing white-to-cyan core inside a pulsing halo, ringed by neuron-green sparks. Brightness scales with level (1-100).",
+      "html": "<div class=\"ds-uchqun\"><div class=\"ds-uchqun-halo\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:0deg\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:60deg\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:120deg\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:180deg\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:240deg\"></div><div class=\"ds-uchqun-spark\" style=\"--angle:300deg\"></div><div class=\"ds-uchqun-core\"></div></div>",
+      "css": ".ds-uchqun { position: relative; width: 140px; height: 140px; } .ds-uchqun-halo { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(127,219,255,0.4) 0%, rgba(127,219,255,0) 70%); animation: ds-uchqun-halo 2s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate; } @keyframes ds-uchqun-halo { from { transform: scale(0.9); } to { transform: scale(1.1); } } .ds-uchqun-core { position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #FFFFFF 0%, #7FDBFF 100%); box-shadow: 0 0 20px 4px rgba(127,219,255,0.8); animation: ds-uchqun-core 1.5s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate; } @keyframes ds-uchqun-core { from { opacity: 0.7; } to { opacity: 1; } } .ds-uchqun-spark { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(0,229,160,0.7); box-shadow: 0 0 4px rgba(0,229,160,0.5); transform: rotate(var(--angle)) translateY(-49px); animation: ds-uchqun-spark 2s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate; } @keyframes ds-uchqun-spark { from { opacity: 0.2; } to { opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-uchqun-halo, .ds-uchqun-core, .ds-uchqun-spark { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tea House at Night",
+    "overview": "Picture an Uzbek choyxona after sunset: the room is dim and deep-blue with the night outside, but the table is warm — a paper-shaded lantern, a brass tray, ko'k choy steaming, an elder pouring. The light is low, intimate, and unhurried. That is the entire visual register of Neyron AI: a deep cosmic-navy room where Bobo Aql sits across from you and pours.\n\nThe system is flat, generous, and quiet. Surfaces stack by tonal depth (cosmic-deep → cosmic-mid → cosmic-light), not by shadow. Corners are large and unhurried. The neuron-green accent is the lantern — present, never loud. Plasma-yellow and bobo-warmth are the brass and the candlelight: rare, warm, character-bearing. Color carries narrative; chrome does not.\n\nWhat this system rejects: the candy-bright juice of cartoony brain-game apps, the cold grey utility chrome of dark-mode SaaS dashboards, and the glowing neon-on-black template that every AI product reaches for by reflex. When a screen drifts toward any of those, the room has stopped being a tea house and started being a control panel. Pull it back.",
+    "keyCharacteristics": [
+      "Deep navy as the room, not as 'dark mode'",
+      "Tonal layering does the work shadows would do",
+      "One true accent (neuron-green), used sparingly",
+      "Two character tones (bobo-warmth, uchqun-glow) reserved for the characters only",
+      "Generous radii (20–24px) and roomy padding; nothing crowded",
+      "Motion is slow, soft, never bouncy; respects reduced-motion",
+      "Inter for both Latin and Cyrillic — typography works in Uzbek (both scripts) and Russian"
+    ],
+    "rules": [
+      { "name": "The Lantern Rule", "body": "Neuron-green is the lantern in the tea house. Used as flooded background only on the primary CTA. Everywhere else it appears at low alpha (≤ 20%), as a small icon, or as the selected-state mark in navigation. If neuron-green coverage on a single screen exceeds ~10% of pixels, the lantern has become a floodlight — pull back.", "section": "colors" },
+      { "name": "The Character-Tone Lock", "body": "bobo-warmth belongs to Bobo Aql. uchqun-glow belongs to Uchqun. They are character signatures, not theme accents. Do not use them on buttons, streak indicators, or any surface they don't represent. Borrowing them dilutes the character system.", "section": "colors" },
+      { "name": "The Tinted-Neutral Rule", "body": "Every neutral in this system is tinted toward the cosmic-blue hue. Pure black (#000000), pure white (#FFFFFF), and untinted greys are forbidden. New neutrals introduced later must carry the same blue tint to keep the room coherent.", "section": "colors" },
+      { "name": "The Evening-Safe Rule", "body": "This palette exists in part to be usable late at night without disrupting melatonin. High-luminance accents (saturated yellow, pure white) are kept to small areas. Do not introduce a large bright surface (a white card, a yellow hero) on any screen part of a normal evening session.", "section": "colors" },
+      { "name": "The One-Weight-Pair Rule", "body": "This system uses Inter 400 and Inter 600. Inter 300, 500, and 700 are forbidden in production UI unless a future explicit need justifies an extension to this file. Two weights, two scripts, every screen — that is the whole rhythm.", "section": "typography" },
+      { "name": "The Cyrillic-First Test", "body": "Every typographic decision must be checked against a Cyrillic or Uzbek-Latin string of realistic length before shipping. Russian strings expand the most; design to the long string, not the English mock.", "section": "typography" },
+      { "name": "The No-Display-Face Rule", "body": "Do not introduce a serif, script, or display sans (e.g. Cormorant, Playfair, Space Grotesk, Monument Extended) without an explicit decision to change the system. Single-family discipline is what keeps the room quiet.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. If you find yourself reaching for box-shadow: 0 4px 12px rgba(0,0,0,0.3) on a card, stop. The card already has depth from sitting on a darker surface; the shadow makes it look like a SaaS dashboard.", "section": "elevation" },
+      { "name": "The Glow-Is-Diegetic Rule", "body": "The glows that exist in this system belong to characters or to states. They are not UI ornaments. Do not add a glow to a card, a button, or a section heading because it 'looks cosmic'. The cosmic feel comes from the navy, not from neon bloom.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use cosmic-deep (#0A1628) as the page scaffold and cosmic-mid (#1A2942) as the card surface. The vertical cosmic-deep → cosmic-mid gradient is the default backdrop for every full-screen container.",
+      "Do keep neuron-green to ≤ 10% of any given screen. The Lantern Rule.",
+      "Do reserve bobo-warmth for Bobo Aql alone, and uchqun-glow for the Uchqun widget alone. The Character-Tone Lock.",
+      "Do convey depth through tonal layering (cosmic-deep → cosmic-mid → cosmic-light), not through shadows.",
+      "Do check every screen in Uzbek-Latin, Uzbek-Cyrillic, and Russian before shipping. Design to the longest expansion, not the English mock.",
+      "Do keep motion slow (200–800ms), soft (ease-out-quart / ease-in-out for character breath), and respectful of prefers-reduced-motion.",
+      "Do use generous corner radii (20–24px on cards) and roomy padding. Things should feel unhurried.",
+      "Do pair every error color signal with an icon and a text label.",
+      "Do keep streak and reward cues quiet — no confetti, no full-screen celebration, no '+50 XP!' toast bursts."
+    ],
+    "donts": [
+      "Don't use #000000 or #FFFFFF anywhere. Every neutral in this system is tinted toward the cosmic-blue hue.",
+      "Don't add a drop-shadow to a card, a button, or a section heading. If you feel the card 'needs depth', the surface behind it isn't dark enough yet.",
+      "Don't introduce gradient text (background-clip: text on a gradient). Use solid pure-white for emphasis; carry hierarchy with weight and scale.",
+      "Don't introduce glassmorphism, frosted blur, or backdrop-filter as a decorative effect. The room is not a sci-fi cockpit.",
+      "Don't drift into the cartoony brain-game-app aesthetic (Lumosity, Elevate, Peak): no candy palettes, no mascot juice, no 'Level Up!' takeovers, no bright primary-color cards.",
+      "Don't drift into the dark-SaaS-dashboard aesthetic (Linear-clone, Notion-clone): no grey-on-grey card grids, no sidebars-and-data-tables, no 'command palette' patterns.",
+      "Don't drift into the sci-fi / crypto / AI-template aesthetic (Perplexity-clone, ChatGPT-clone): no glowing terminal gradients, no holographic chrome, no sparkle iconography, no neon-on-black.",
+      "Don't introduce a serif, script, or display sans beyond Inter without an explicit DESIGN.md update.",
+      "Don't introduce Inter weights other than 400 and 600 in production UI.",
+      "Don't use color as the only signal for any state (error, success, selected, disabled). There must always be a non-color cue.",
+      "Don't introduce a large bright surface (a white card, a saturated-yellow hero) on a screen that is part of a normal evening session.",
+      "Don't localize by retrofitting English mocks. Russian and Uzbek strings expand, and Cyrillic has different ascender behavior; design to the longest realistic string."
+    ]
+  }
+}
