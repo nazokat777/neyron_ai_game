@@ -8,6 +8,17 @@ class StorageService {
   static const _kChatHistory = 'chat_history';
   static const _kApiKey = 'api_key';
   static const _kLastActiveDate = 'last_active_date';
+  static const _kLanguage = 'language_code';
+
+  Future<void> saveLanguage(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kLanguage, code);
+  }
+
+  Future<String?> loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kLanguage);
+  }
 
   Future<void> saveProfile(UserProfile profile) async {
     final prefs = await SharedPreferences.getInstance();

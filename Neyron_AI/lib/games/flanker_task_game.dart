@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,108 +10,131 @@ import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
 import 'adaptive_flow_engine.dart';
 
-/// Shulte jadvali — cheksiz adaptiv vizual diqqat va periferik ko'rish mashqi
-/// Ilmiy asos: Walter Schulte (1920), 47% diqqat yaxshilanishi (8 hafta mashq)
-/// Bir "raund" = bitta to'liq jadvalni 1..N tartibda topish.
-class ShulteGame extends StatefulWidget {
-  const ShulteGame({super.key});
+/// Oqimni boshqarish (Flanker Task) — cheksiz adaptiv selektiv diqqat
+/// Ilmiy asos: response inhibition + interference control (anterior cingulate)
+class FlankerTaskGame extends StatefulWidget {
+  const FlankerTaskGame({super.key});
 
   @override
-  State<ShulteGame> createState() => _ShulteGameState();
+  State<FlankerTaskGame> createState() => _FlankerTaskGameState();
 }
 
-class _ShulteGameState extends State<ShulteGame> {
+class _FlankerTaskGameState extends State<FlankerTaskGame> {
   final Random _rng = Random();
   final AdaptiveFlowEngine _engine = AdaptiveFlowEngine(
-    rtThreshold: 6.0, // 6 soniyadan tez jadval = tezlik bonusi
-    maxLatency: 999, // jadval uchun qattiq timeout yo'q — sekinlik faqat bonusni yo'qotadi
-    alpha: 0.12,
-    beta: 0.18,
+    rtThreshold: 0.7, // 0.7 soniyadan tez = bonus
+    maxLatency: 999,
+    alpha: 0.10,
+    beta: 0.16,
   );
 
-  late int _side; // jadval tomoni (3..7)
-  late List<int> _numbers;
-  int _nextNumber = 1;
-  int _mistakes = 0;
-  int _lastWrongIndex = -1;
-  DateTime _boardStart = DateTime.now();
+  String _target = 'L'; // markaziy strelka yo'nalishi
+  List<String> _arrows = const ['L', 'L', 'L', 'L', 'L'];
+  String? _flashSide;
+  bool? _flashCorrect;
+  bool _showResult = false;
   bool _finished = false;
   bool _levelUp = false;
+
+  double _roundMs = 2000;
+  double _timeLeft = 2000;
+  DateTime _roundStart = DateTime.now();
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _newBoard();
+    _nextRound();
   }
 
-  // engine.level dan jadval tomonini hisoblaydi: 3x3 (1-daraja) → 7x7
-  int _sideForLevel() => (3 + (_engine.level - 1) ~/ 2).clamp(3, 7);
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
-  int get _totalCells => _side * _side;
+  // Darajadan raund vaqt byudjetini hisoblaydi (cheksiz pasayadi, 700ms pol)
+  double _msForLevel() => max(700, 2000 - (_engine.level - 1) * 120).toDouble();
 
-  void _newBoard() {
-    _side = _sideForLevel();
+  void _nextRound() {
+    final lvl = _engine.level;
+    _target = _rng.nextBool() ? 'L' : 'R';
+    // Inkongruent (chalg'ituvchi) holat ehtimoli darajaga qarab oshadi
+    final incongruentProb = (0.30 + (lvl - 1) * 0.06).clamp(0.0, 0.85);
+    final incongruent = _rng.nextDouble() < incongruentProb;
+    final flanker = incongruent ? (_target == 'L' ? 'R' : 'L') : _target;
+    _arrows = [flanker, flanker, _target, flanker, flanker];
+    _roundMs = _msForLevel();
     setState(() {
-      _numbers = List.generate(_totalCells, (i) => i + 1)..shuffle(_rng);
-      _nextNumber = 1;
-      _mistakes = 0;
-      _lastWrongIndex = -1;
+      _flashSide = null;
+      _flashCorrect = null;
+      _showResult = false;
       _levelUp = false;
-      _boardStart = DateTime.now();
+      _timeLeft = _roundMs;
+      _roundStart = DateTime.now();
+    });
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (t) {
+      if (!mounted) return;
+      setState(() => _timeLeft -= 100);
+      if (_timeLeft <= 0) {
+        t.cancel();
+        _onTimeout();
+      }
     });
   }
 
-  void _onTap(int number, int index) {
-    if (_finished) return;
-
-    if (number == _nextNumber) {
-      HapticFeedback.selectionClick();
-      _nextNumber++;
-      if (_nextNumber > _totalCells) {
-        _completeBoard();
-      } else {
-        setState(() {});
-      }
-    } else {
-      HapticFeedback.heavyImpact();
-      setState(() {
-        _mistakes++;
-        _lastWrongIndex = index;
-      });
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) setState(() => _lastWrongIndex = -1);
-      });
-    }
+  void _onTimeout() {
+    if (_flashCorrect != null || _finished) return;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: false);
+    setState(() {
+      _flashCorrect = false;
+      _flashSide = null;
+      _showResult = true;
+      _levelUp = _engine.level > prevLevel;
+    });
+    HapticFeedback.heavyImpact();
+    _timer = Timer(const Duration(milliseconds: 600), _advance);
   }
 
-  void _completeBoard() {
-    final boardTime =
-        DateTime.now().difference(_boardStart).inMilliseconds / 1000.0;
-    final correct = _mistakes <= 2;
+  void _onTap(String side) {
+    if (_flashCorrect != null || _finished) return;
+    _timer?.cancel();
+    final correct = side == _target;
+    final rt = DateTime.now().difference(_roundStart).inMilliseconds / 1000.0;
     final prevLevel = _engine.level;
-    _engine.registerRound(correct: correct, reactionTime: boardTime);
-    final levelUp = _engine.level > prevLevel;
-
+    _engine.registerRound(correct: correct, reactionTime: rt);
+    setState(() {
+      _flashSide = side;
+      _flashCorrect = correct;
+      _showResult = true;
+      _levelUp = _engine.level > prevLevel;
+    });
     if (correct) {
       HapticFeedback.lightImpact();
       if (_engine.gainedLife) HapticFeedback.mediumImpact();
     } else {
       HapticFeedback.heavyImpact();
     }
+    _timer = Timer(const Duration(milliseconds: 450), _advance);
+  }
 
-    setState(() => _levelUp = levelUp);
-
-    Future.delayed(const Duration(milliseconds: 420), () {
-      if (!mounted) return;
-      if (_engine.isGameOver) {
-        _finish();
-      } else {
-        _newBoard();
-      }
-    });
+  void _advance() {
+    if (!mounted) return;
+    if (_engine.isGameOver) {
+      _finish();
+    } else {
+      _nextRound();
+    }
   }
 
   Future<void> _finish() async {
+    _timer?.cancel();
     setState(() => _finished = true);
     final state = context.read<AppState>();
     await state.incrementSessions();
@@ -120,16 +144,17 @@ class _ShulteGameState extends State<ShulteGame> {
   }
 
   void _restart() {
+    _timer?.cancel();
     _engine.reset();
     setState(() => _finished = false);
-    _newBoard();
+    _nextRound();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(L10n.t('shulte.title')),
+        title: Text(L10n.t('flanker.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -166,30 +191,45 @@ class _ShulteGameState extends State<ShulteGame> {
         children: [
           const SizedBox(height: 12),
           _statusBar(),
-          const SizedBox(height: 24),
-          _heroTarget(),
-          const SizedBox(height: 16),
-          Expanded(child: Center(child: _buildGrid())),
-          const SizedBox(height: 24),
+          Expanded(child: Center(child: _arrowRow())),
+          _buttons(),
+          const SizedBox(height: 28),
         ],
       ),
     );
   }
 
   Widget _statusBar() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final timeFrac = _roundMs > 0 ? (_timeLeft / _roundMs).clamp(0.0, 1.0) : 0.0;
+    final urgent = _timeLeft <= 600;
+    final timeColor = urgent ? AppColors.accentRed : AppColors.neuronGreen;
+    return Column(
       children: [
-        _levelChip(),
-        _livesRow(),
-        Text(
-          '${_engine.score}',
-          style: const TextStyle(
-            color: AppColors.pureWhite,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1,
-            fontFeatures: [FontFeature.tabularFigures()],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _levelChip(),
+            _livesRow(),
+            Text(
+              '${_engine.score}',
+              style: const TextStyle(
+                color: AppColors.pureWhite,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: LinearProgressIndicator(
+            value: timeFrac,
+            minHeight: 2,
+            backgroundColor: AppColors.cosmicMid,
+            valueColor: AlwaysStoppedAnimation<Color>(timeColor),
           ),
         ),
       ],
@@ -225,127 +265,98 @@ class _ShulteGameState extends State<ShulteGame> {
   Widget _livesRow() {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(_engine.lives, (i) {
-        return const Padding(
+      children: List.generate(
+        _engine.lives,
+        (_) => const Padding(
           padding: EdgeInsets.symmetric(horizontal: 1.5),
-          child: Icon(
-            Icons.favorite,
-            size: 14,
-            color: AppColors.accentRed,
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _heroTarget() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              L10n.t('shulte.find'),
-              style: TextStyle(
-                color: AppColors.pureWhite.withValues(alpha: 0.5),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2,
-              ),
-            ),
-            Text(
-              _mistakes == 0
-                  ? L10n.t('shulte.clean')
-                  : '$_mistakes ${L10n.t('shulte.mistakes')}',
-              style: TextStyle(
-                color: _mistakes == 0
-                    ? AppColors.pureWhite.withValues(alpha: 0.5)
-                    : AppColors.accentRed,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
+          child: Icon(Icons.favorite, size: 14, color: AppColors.accentRed),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '$_nextNumber',
-          key: ValueKey('target-$_nextNumber'),
-          style: const TextStyle(
-            fontSize: 76,
-            fontWeight: FontWeight.w600,
-            color: AppColors.neuronGreen,
-            letterSpacing: -0.04,
-            height: 1.0,
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        )
-            .animate(key: ValueKey('target-anim-$_nextNumber'))
-            .fadeIn(duration: 180.ms)
-            .scale(
-              begin: const Offset(0.7, 0.7),
-              end: const Offset(1, 1),
-              duration: 240.ms,
-              curve: Curves.easeOutQuart,
-            ),
-      ],
-    );
-  }
-
-  Widget _buildGrid() {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _side,
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-        ),
-        itemCount: _totalCells,
-        itemBuilder: (_, i) => _buildCell(i),
       ),
     );
   }
 
-  Widget _buildCell(int index) {
-    final number = _numbers[index];
-    final isFound = number < _nextNumber;
-    final isWrong = index == _lastWrongIndex;
-    // Katta jadvalda raqamlar kichikroq bo'lib mos kelsin
-    final fontSize = (160 / _side).clamp(18.0, 34.0);
+  Widget _arrowRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_arrows.length, (i) {
+        final isCenter = i == 2;
+        // Natija ko'rsatilganda markaziy strelka neuron-yashil bo'ladi
+        Color color = AppColors.pureWhite;
+        if (_showResult && isCenter) color = AppColors.neuronGreen;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Icon(
+            _arrows[i] == 'L' ? Icons.arrow_back : Icons.arrow_forward,
+            size: 52,
+            color: color,
+          ),
+        );
+      }),
+    )
+        .animate(key: ValueKey('arrows-${_engine.round}'))
+        .fadeIn(duration: 160.ms)
+        .scale(
+          begin: const Offset(0.92, 0.92),
+          end: const Offset(1, 1),
+          duration: 200.ms,
+          curve: Curves.easeOutQuart,
+        );
+  }
 
+  Widget _buttons() {
+    return Row(
+      children: [
+        Expanded(child: _dirButton('L', L10n.t('flanker.left'), Icons.arrow_back)),
+        const SizedBox(width: 12),
+        Expanded(child: _dirButton('R', L10n.t('flanker.right'), Icons.arrow_forward)),
+      ],
+    );
+  }
+
+  Widget _dirButton(String side, String label, IconData icon) {
+    final isFlash = _flashSide == side;
     Color bg = AppColors.cosmicMid;
-    if (isFound) bg = AppColors.neuronGreen.withValues(alpha: 0.18);
-    if (isWrong) bg = AppColors.accentRed.withValues(alpha: 0.35);
-
+    Color border = AppColors.pureWhite.withValues(alpha: 0.08);
+    Color fg = AppColors.pureWhite;
+    double borderWidth = 1;
+    if (isFlash && _flashCorrect == true) {
+      bg = AppColors.neuronGreen.withValues(alpha: 0.2);
+      border = AppColors.neuronGreen;
+      fg = AppColors.neuronGreen;
+      borderWidth = 2;
+    } else if (isFlash && _flashCorrect == false) {
+      bg = AppColors.accentRed.withValues(alpha: 0.2);
+      border = AppColors.accentRed;
+      fg = AppColors.accentRed;
+      borderWidth = 2;
+    }
     return GestureDetector(
-      onTap: () => _onTap(number, index),
+      onTap: () => _onTap(side),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 22),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: border, width: borderWidth),
         ),
-        child: Center(
-          child: Text(
-            isFound ? '·' : '$number',
-            style: TextStyle(
-              fontSize: isFound ? fontSize * 0.7 : fontSize,
-              fontWeight: FontWeight.w600,
-              color: isFound
-                  ? AppColors.neuronGreen.withValues(alpha: 0.7)
-                  : AppColors.pureWhite,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              letterSpacing: -0.02,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 30, color: fg),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: fg,
+                letterSpacing: 1,
+              ),
             ),
-          ),
+          ],
         ),
-      )
-          .animate(target: isWrong ? 1 : 0)
-          .shake(hz: 6, curve: Curves.easeInOut, duration: 280.ms),
+      ),
     );
   }
 
@@ -409,8 +420,8 @@ class _ShulteGameState extends State<ShulteGame> {
                   foregroundColor: AppColors.pureWhite,
                   side: BorderSide(
                       color: AppColors.pureWhite.withValues(alpha: 0.3)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),

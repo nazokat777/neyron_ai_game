@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
 
@@ -20,33 +21,31 @@ class GardenScreen extends StatelessWidget {
             children: [
               _header(),
               const SizedBox(height: 40),
-              const SectionHeader(index: 'TEZ ORADA', title: 'Bog\'lar'),
+              SectionHeader(
+                  index: L10n.t('garden.soon'), title: L10n.t('garden.title')),
               const SizedBox(height: 24),
               _gardenRow(
                 index: 1,
                 emoji: '🌳',
-                title: 'Xotira Bog\'i',
-                category: 'Xotira',
-                description:
-                    'Kunlik xotiralarni saqlash, yuzlar va joylar bilan ishlash.',
+                title: L10n.t('garden.g1.title'),
+                category: L10n.t('garden.g1.cat'),
+                description: L10n.t('garden.g1.desc'),
                 accent: AppColors.neuronGreen,
               ),
               _gardenRow(
                 index: 2,
                 emoji: '🌙',
-                title: 'Sokin Burchak',
-                category: 'Tinchlik',
-                description:
-                    'Ortiqcha stimullarsiz, ranglar va shakllar bilan tinch o\'yinlar.',
+                title: L10n.t('garden.g2.title'),
+                category: L10n.t('garden.g2.cat'),
+                description: L10n.t('garden.g2.desc'),
                 accent: AppColors.pureWhite,
               ),
               _gardenRow(
                 index: 3,
                 emoji: '🌸',
-                title: 'Mehr Bog\'i',
-                category: 'Hissiyot',
-                description:
-                    'Yuz ifodalari, suhbat ko\'nikmalari va emotsional bog\'lanish.',
+                title: L10n.t('garden.g3.title'),
+                category: L10n.t('garden.g3.cat'),
+                description: L10n.t('garden.g3.desc'),
                 accent: AppColors.plasmaYellow,
               ),
               const SizedBox(height: 24),
@@ -73,9 +72,9 @@ class GardenScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Bog\'lar',
-          style: TextStyle(
+        Text(
+          L10n.t('garden.title'),
+          style: const TextStyle(
             fontSize: 44,
             fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
@@ -85,7 +84,7 @@ class GardenScreen extends StatelessWidget {
         ).animate().fadeIn().slideX(begin: -0.02, end: 0),
         const SizedBox(height: 16),
         Text(
-          'Tinch va parvarishli makonlar',
+          L10n.t('garden.subtitle'),
           style: TextStyle(
             fontSize: 15,
             color: AppColors.pureWhite.withValues(alpha: 0.55),
@@ -195,7 +194,7 @@ class GardenScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Bu bog\'lar tibbiy davo emas. Tibbiy maslahat uchun shifokorga murojaat qiling.',
+              L10n.t('garden.disclaimer'),
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.pureWhite.withValues(alpha: 0.6),

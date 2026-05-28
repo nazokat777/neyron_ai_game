@@ -15,6 +15,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _awaitingLanguage = false;
+
   @override
   void initState() {
     super.initState();
@@ -27,15 +29,101 @@ class _SplashScreenState extends State<SplashScreen> {
     if (state.hasProfile) {
       await state.incrementStreak();
     }
+    // Til hali tanlanmagan bo'lsa — boshida til tanlashni so'raymiz
+    if (!state.languageChosen) {
+      if (!mounted) return;
+      setState(() => _awaitingLanguage = true);
+      return;
+    }
     await Future.delayed(const Duration(milliseconds: 2200));
-
     if (!mounted) return;
+    _goNext(state);
+  }
+
+  Future<void> _onPickLang(String code) async {
+    final state = context.read<AppState>();
+    await state.setLanguage(code);
+    if (!mounted) return;
+    _goNext(state);
+  }
+
+  void _goNext(AppState state) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) =>
             state.hasProfile ? const MainNavigation() : const OnboardingScreen(),
       ),
     );
+  }
+
+  Widget _loadingBar() {
+    return Center(
+      child: SizedBox(
+        width: 32,
+        height: 2,
+        child: LinearProgressIndicator(
+          backgroundColor: AppColors.pureWhite.withValues(alpha: 0.08),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            AppColors.pureWhite.withValues(alpha: 0.35),
+          ),
+        ),
+      ),
+    ).animate(delay: 1200.ms).fadeIn();
+  }
+
+  Widget _languagePicker() {
+    Widget chip(String code, String label) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => _onPickLang(code),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 5),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.cosmicMid,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.pureWhite.withValues(alpha: 0.12),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Tilni tanlang · Выберите язык · Choose language',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.pureWhite.withValues(alpha: 0.5),
+            fontSize: 12,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            chip('uz', 'O\'zbekcha'),
+            chip('ru', 'Русский'),
+            chip('en', 'English'),
+          ],
+        ),
+      ],
+    ).animate().fadeIn(duration: 400.ms);
   }
 
   @override
@@ -122,24 +210,12 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              // Pastki indicator
+              // Pastki: til tanlash (birinchi marta) yoki yuklanish indikatori
               Positioned(
-                bottom: 36,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: SizedBox(
-                    width: 32,
-                    height: 2,
-                    child: LinearProgressIndicator(
-                      backgroundColor:
-                          AppColors.pureWhite.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.pureWhite.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ),
-                ).animate(delay: 1200.ms).fadeIn(),
+                bottom: 44,
+                left: 24,
+                right: 24,
+                child: _awaitingLanguage ? _languagePicker() : _loadingBar(),
               ),
 
               // Pastki burchak: editorial tag

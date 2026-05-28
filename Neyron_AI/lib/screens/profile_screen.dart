@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/app_state.dart';
 import '../services/i18n.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/hero_characters.dart';
 import 'onboarding_screen.dart';
@@ -33,19 +34,19 @@ class ProfileScreen extends StatelessWidget {
             children: [
               _header(profile),
               const SizedBox(height: 40),
-              _section('01', 'Shogird'),
+              _section('01', L10n.t('profile.sec.apprentice')),
               const SizedBox(height: 20),
               _maryamSection(profile, level),
               const SizedBox(height: 40),
-              _section('02', 'Statistika'),
+              _section('02', L10n.t('profile.sec.stats')),
               const SizedBox(height: 20),
               _statsGrid(profile),
               const SizedBox(height: 40),
-              _section('03', 'Ko\'nikmalar'),
+              _section('03', L10n.t('profile.sec.skills')),
               const SizedBox(height: 20),
               _skillsSection(profile),
               const SizedBox(height: 40),
-              _section('04', 'Sozlamalar'),
+              _section('04', L10n.t('profile.sec.settings')),
               const SizedBox(height: 20),
               _settingsSection(context, state),
               const SizedBox(height: 24),
@@ -64,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
         Row(
           children: [
             Text(
-              'PASPORT',
+              L10n.t('profile.passport'),
               style: TextStyle(
                 color: AppColors.pureWhite.withValues(alpha: 0.4),
                 fontSize: 11,
@@ -94,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
         ).animate().fadeIn().slideX(begin: -0.02, end: 0),
         const SizedBox(height: 10),
         Text(
-          '${profile.age} yosh · ${profile.ageGroup.displayName}',
+          '${profile.age} ${L10n.t('profile.ageSuffix')} · ${L10n.t(profile.ageGroup.l10nKey)}',
           style: TextStyle(
             color: AppColors.pureWhite.withValues(alpha: 0.5),
             fontSize: 13,
@@ -198,19 +199,25 @@ class ProfileScreen extends StatelessWidget {
   Widget _statsGrid(UserProfile profile) {
     return Row(
       children: [
-        Expanded(child: _statBlock('${profile.streakDays}', 'kun streak')),
+        Expanded(
+            child: _statBlock(
+                '${profile.streakDays}', L10n.t('profile.stat.streak'))),
         Container(
           width: 0.5,
           height: 56,
           color: AppColors.pureWhite.withValues(alpha: 0.1),
         ),
-        Expanded(child: _statBlock('${profile.totalSessions}', 'sessiya')),
+        Expanded(
+            child: _statBlock(
+                '${profile.totalSessions}', L10n.t('profile.stat.session'))),
         Container(
           width: 0.5,
           height: 56,
           color: AppColors.pureWhite.withValues(alpha: 0.1),
         ),
-        Expanded(child: _statBlock('${profile.coins}', 'tanga')),
+        Expanded(
+            child:
+                _statBlock('${profile.coins}', L10n.t('profile.stat.coins'))),
       ],
     ).animate(delay: 250.ms).fadeIn().slideY(begin: 0.05, end: 0);
   }
@@ -245,11 +252,11 @@ class ProfileScreen extends StatelessWidget {
   // ─── 03 Skills — typographic bar list ────────────────────────
   Widget _skillsSection(UserProfile profile) {
     final entries = <(String, double)>[
-      ('Xotira', profile.skills['memory'] ?? 0),
-      ('E\'tibor', profile.skills['attention'] ?? 0),
-      ('Mantiq', profile.skills['logic'] ?? 0),
-      ('Tezlik', profile.skills['speed'] ?? 0),
-      ('Egiluvchanlik', profile.skills['flexibility'] ?? 0),
+      (L10n.t('profile.skill.memory'), profile.skills['memory'] ?? 0),
+      (L10n.t('profile.skill.attention'), profile.skills['attention'] ?? 0),
+      (L10n.t('profile.skill.logic'), profile.skills['logic'] ?? 0),
+      (L10n.t('profile.skill.speed'), profile.skills['speed'] ?? 0),
+      (L10n.t('profile.skill.flexibility'), profile.skills['flexibility'] ?? 0),
     ];
     return Column(
       children: entries.map((e) => _skillRow(e.$1, e.$2)).toList(),
@@ -303,23 +310,92 @@ class ProfileScreen extends StatelessWidget {
   Widget _settingsSection(BuildContext context, AppState state) {
     return Column(
       children: [
+        _languageSelector(context, state),
+        const SizedBox(height: 20),
         _settingsTile(
           context,
           icon: Icons.vpn_key_outlined,
-          title: 'AI API kaliti',
-          subtitle: state.hasApiKey ? 'O\'rnatilgan' : 'O\'rnatilmagan',
+          title: L10n.t('profile.apiKey'),
+          subtitle: state.hasApiKey
+              ? L10n.t('profile.apiSet')
+              : L10n.t('profile.apiUnset'),
           onTap: () => _showApiKeyDialog(context, state),
         ),
         _settingsTile(
           context,
           icon: Icons.refresh_rounded,
-          title: 'Profilni qayta yaratish',
-          subtitle: 'Hammasini o\'chiradi',
+          title: L10n.t('profile.reset'),
+          subtitle: L10n.t('profile.resetSub'),
           onTap: () => _confirmReset(context, state),
           isDanger: true,
         ),
       ],
     ).animate(delay: 450.ms).fadeIn();
+  }
+
+  Widget _languageSelector(BuildContext context, AppState state) {
+    Widget chip(String code, String label) {
+      final selected = state.languageCode == code;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => state.setLanguage(code),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.neuronGreen.withValues(alpha: 0.18)
+                  : AppColors.cosmicMid,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? AppColors.neuronGreen
+                    : AppColors.pureWhite.withValues(alpha: 0.08),
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? AppColors.neuronGreen
+                      : AppColors.pureWhite,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 10),
+          child: Text(
+            L10n.t('lang.title'),
+            style: TextStyle(
+              color: AppColors.pureWhite.withValues(alpha: 0.5),
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            chip('uz', 'UZ'),
+            chip('ru', 'RU'),
+            chip('en', 'EN'),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _settingsTile(
@@ -391,9 +467,9 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: AppColors.cosmicMid,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Anthropic API kaliti',
-          style: TextStyle(
+        title: Text(
+          L10n.t('profile.apiDialog.title'),
+          style: const TextStyle(
               color: AppColors.pureWhite,
               fontSize: 18,
               fontWeight: FontWeight.w600),
@@ -402,9 +478,9 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Professor bilan AI suhbat uchun kerak.\nKalitni shu yerdan oling:',
-              style: TextStyle(
+            Text(
+              L10n.t('profile.apiDialog.body'),
+              style: const TextStyle(
                   fontSize: 13, color: AppColors.pureWhite, height: 1.5),
             ),
             const SizedBox(height: 4),
@@ -439,7 +515,7 @@ class ProfileScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Bekor',
+            child: Text(L10n.t('profile.cancel'),
                 style: TextStyle(
                     color: AppColors.pureWhite.withValues(alpha: 0.6))),
           ),
@@ -448,7 +524,7 @@ class ProfileScreen extends StatelessWidget {
               await state.setApiKey(controller.text.trim());
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Saqlash'),
+            child: Text(L10n.t('profile.save')),
           ),
         ],
       ),
@@ -462,22 +538,22 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: AppColors.cosmicMid,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Hammasini o\'chirish?',
-          style: TextStyle(
+        title: Text(
+          L10n.t('profile.resetDialog.title'),
+          style: const TextStyle(
               color: AppColors.pureWhite,
               fontSize: 18,
               fontWeight: FontWeight.w600),
         ),
-        content: const Text(
-          'Profilingiz, suhbatlar va statistika o\'chadi.\nBu qaytarib bo\'lmaydi.',
-          style: TextStyle(
+        content: Text(
+          L10n.t('profile.resetDialog.body'),
+          style: const TextStyle(
               color: AppColors.pureWhite, fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Bekor',
+            child: Text(L10n.t('profile.cancel'),
                 style: TextStyle(
                     color: AppColors.pureWhite.withValues(alpha: 0.6))),
           ),
@@ -495,7 +571,7 @@ class ProfileScreen extends StatelessWidget {
                 );
               }
             },
-            child: const Text('O\'chirish'),
+            child: Text(L10n.t('profile.delete')),
           ),
         ],
       ),

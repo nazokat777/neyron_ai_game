@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/game_instruction_overlay.dart';
 import '../games/shulte_game.dart';
 import '../games/memory_matrix_game.dart';
 import '../games/stroop_game.dart';
 import '../games/quick_math_game.dart';
 import '../games/dual_decision_game.dart';
+import '../games/number_span_game.dart';
+import '../games/face_match_game.dart';
+import '../games/word_chain_game.dart';
+import '../games/dual_nback_game.dart';
+import '../games/flanker_task_game.dart';
 
 /// Laboratoriya — Professor'ning konspekti.
 /// Editorial typographic list: katta sarlavhalar, mayda meta, no chrome.
@@ -47,9 +54,9 @@ class LabScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Mashqlar',
-          style: TextStyle(
+        Text(
+          L10n.t('nav.lab'),
+          style: const TextStyle(
             fontSize: 44,
             fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
@@ -59,7 +66,7 @@ class LabScreen extends StatelessWidget {
         ).animate().fadeIn().slideX(begin: -0.02, end: 0),
         const SizedBox(height: 16),
         Text(
-          'Har xona — alohida eksperiment',
+          L10n.t('lab.subtitle'),
           style: TextStyle(
             fontSize: 15,
             color: AppColors.pureWhite.withValues(alpha: 0.55),
@@ -74,48 +81,103 @@ class LabScreen extends StatelessWidget {
     final items = [
       _GameItem(
         index: 1,
-        title: 'Shulte jadvali',
-        category: 'E\'tibor',
-        duration: '3–5 daq',
-        description: 'Vizual diqqat va periferik ko\'rishni mashq qiladi.',
+        gameKey: 'shulte',
+        title: L10n.t('lab.shulte.title'),
+        category: L10n.t('lab.shulte.cat'),
+        duration: L10n.t('lab.shulte.dur'),
+        description: L10n.t('lab.shulte.desc'),
         accent: AppColors.plasmaYellow,
         builder: () => const ShulteGame(),
       ),
       _GameItem(
         index: 2,
-        title: 'Xotira matritsasi',
-        category: 'Xotira',
-        duration: '5–7 daq',
-        description: 'Ishchi xotira va naqsh esda saqlash.',
+        gameKey: 'memory_matrix',
+        title: L10n.t('lab.memory_matrix.title'),
+        category: L10n.t('lab.memory_matrix.cat'),
+        duration: L10n.t('lab.memory_matrix.dur'),
+        description: L10n.t('lab.memory_matrix.desc'),
         accent: AppColors.neuronGreen,
         builder: () => const MemoryMatrixGame(),
       ),
       _GameItem(
         index: 3,
-        title: 'Ikki qaror',
-        category: 'Tezlik',
-        duration: '2–3 daq',
-        description: 'Reaksiya tezligi va qoidaga moslashish.',
+        gameKey: 'dual_decision',
+        title: L10n.t('lab.dual_decision.title'),
+        category: L10n.t('lab.dual_decision.cat'),
+        duration: L10n.t('lab.dual_decision.dur'),
+        description: L10n.t('lab.dual_decision.desc'),
         accent: AppColors.plasmaYellow,
         builder: () => const DualDecisionGame(),
       ),
       _GameItem(
         index: 4,
-        title: 'Stroop testi',
-        category: 'Diqqat',
-        duration: '2–3 daq',
-        description: 'Rang va so\'z konfliktini yengish.',
+        gameKey: 'stroop',
+        title: L10n.t('lab.stroop.title'),
+        category: L10n.t('lab.stroop.cat'),
+        duration: L10n.t('lab.stroop.dur'),
+        description: L10n.t('lab.stroop.desc'),
         accent: AppColors.gameRed,
         builder: () => const StroopGame(),
       ),
       _GameItem(
         index: 5,
-        title: 'Tez hisob',
-        category: 'Mantiq',
-        duration: '2–3 daq',
-        description: 'Arifmetik chaqqonlik.',
+        gameKey: 'quick_math',
+        title: L10n.t('lab.quick_math.title'),
+        category: L10n.t('lab.quick_math.cat'),
+        duration: L10n.t('lab.quick_math.dur'),
+        description: L10n.t('lab.quick_math.desc'),
         accent: AppColors.gameBlue,
         builder: () => const QuickMathGame(),
+      ),
+      _GameItem(
+        index: 6,
+        gameKey: 'number_span',
+        title: L10n.t('lab.number_span.title'),
+        category: L10n.t('lab.number_span.cat'),
+        duration: L10n.t('lab.number_span.dur'),
+        description: L10n.t('lab.number_span.desc'),
+        accent: AppColors.neuronGreen,
+        builder: () => const NumberSpanGame(),
+      ),
+      _GameItem(
+        index: 7,
+        gameKey: 'face_match',
+        title: L10n.t('lab.face_match.title'),
+        category: L10n.t('lab.face_match.cat'),
+        duration: L10n.t('lab.face_match.dur'),
+        description: L10n.t('lab.face_match.desc'),
+        accent: AppColors.plasmaYellow,
+        builder: () => const FaceMatchGame(),
+      ),
+      _GameItem(
+        index: 8,
+        gameKey: 'word_chain',
+        title: L10n.t('lab.word_chain.title'),
+        category: L10n.t('lab.word_chain.cat'),
+        duration: L10n.t('lab.word_chain.dur'),
+        description: L10n.t('lab.word_chain.desc'),
+        accent: AppColors.neuronGreen,
+        builder: () => const WordChainGame(),
+      ),
+      _GameItem(
+        index: 9,
+        gameKey: 'dual_nback',
+        title: L10n.t('lab.dual_nback.title'),
+        category: L10n.t('lab.dual_nback.cat'),
+        duration: L10n.t('lab.dual_nback.dur'),
+        description: L10n.t('lab.dual_nback.desc'),
+        accent: AppColors.gameBlue,
+        builder: () => const DualNBackGame(),
+      ),
+      _GameItem(
+        index: 10,
+        gameKey: 'flanker',
+        title: L10n.t('lab.flanker.title'),
+        category: L10n.t('lab.flanker.cat'),
+        duration: L10n.t('lab.flanker.dur'),
+        description: L10n.t('lab.flanker.desc'),
+        accent: AppColors.gameRed,
+        builder: () => const FlankerTaskGame(),
       ),
     ];
 
@@ -135,7 +197,23 @@ class LabScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => item.builder()),
+            MaterialPageRoute(
+              builder: (ctx) => Scaffold(
+                extendBodyBehindAppBar: true,
+                backgroundColor: AppColors.cosmicDeep,
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  foregroundColor: AppColors.pureWhite,
+                ),
+                body: GameInstructionOverlay(
+                  gameKey: item.gameKey,
+                  onStart: () => Navigator.of(ctx).pushReplacement(
+                    MaterialPageRoute(builder: (_) => item.builder()),
+                  ),
+                ),
+              ),
+            ),
           ),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
@@ -241,6 +319,7 @@ class LabScreen extends StatelessWidget {
 
 class _GameItem {
   final int index;
+  final String gameKey;
   final String title;
   final String category;
   final String duration;
@@ -250,6 +329,7 @@ class _GameItem {
 
   const _GameItem({
     required this.index,
+    required this.gameKey,
     required this.title,
     required this.category,
     required this.duration,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import 'planet_screen.dart';
 import 'lab_screen.dart';
@@ -25,11 +26,11 @@ class _MainNavigationState extends State<MainNavigation> {
   ];
 
   static const _items = [
-    _NavItem(Icons.public_rounded, 'Sayyora'),
-    _NavItem(Icons.science_rounded, 'Lab'),
-    _NavItem(Icons.local_florist_rounded, 'Bog\'lar'),
-    _NavItem(Icons.emoji_events_rounded, 'Akademiya'),
-    _NavItem(Icons.person_rounded, 'Pasport'),
+    _NavItem(Icons.public_rounded, 'nav.planet'),
+    _NavItem(Icons.science_rounded, 'nav.lab'),
+    _NavItem(Icons.local_florist_rounded, 'nav.garden'),
+    _NavItem(Icons.emoji_events_rounded, 'nav.academy'),
+    _NavItem(Icons.person_rounded, 'nav.profile'),
   ];
 
   @override
@@ -84,7 +85,7 @@ class _MainNavigationState extends State<MainNavigation> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            item.label,
+                            L10n.t(item.label),
                             style: TextStyle(
                               fontSize: 11,
                               color: active

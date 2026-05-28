@@ -3,6 +3,7 @@ import '../models/user_profile.dart';
 import '../models/message.dart';
 import 'storage_service.dart';
 import 'ai_service.dart';
+import 'i18n.dart';
 
 /// Ilovaning global holati — Provider orqali tarqatiladi
 class AppState extends ChangeNotifier {
@@ -13,6 +14,8 @@ class AppState extends ChangeNotifier {
   String? _apiKey;
   AiService? _ai;
   bool _isLoading = false;
+  String _languageCode = I18n.deviceLanguage;
+  bool _languageChosen = false;
 
   UserProfile? get profile => _profile;
   List<Message> get messages => List.unmodifiable(_messages);
@@ -20,15 +23,31 @@ class AppState extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasProfile => _profile != null;
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
+  String get languageCode => _languageCode;
+  bool get languageChosen => _languageChosen;
 
   /// Ilova ishga tushganda chaqiriladi
   Future<void> initialize() async {
     _profile = await storage.loadProfile();
     _messages = await storage.loadChatHistory();
     _apiKey = await storage.loadApiKey();
+    final savedLang = await storage.loadLanguage();
+    _languageCode = savedLang ?? I18n.deviceLanguage;
+    _languageChosen = savedLang != null;
+    I18n.override = _languageCode;
     if (_apiKey != null && _apiKey!.isNotEmpty) {
       _ai = AiService(apiKey: _apiKey!);
     }
+    notifyListeners();
+  }
+
+  /// Tilni o'zgartirish (uz/ru/en) — butun ilova qayta render bo'ladi
+  Future<void> setLanguage(String code) async {
+    if (code != 'uz' && code != 'ru' && code != 'en') return;
+    _languageCode = code;
+    _languageChosen = true;
+    I18n.override = code;
+    await storage.saveLanguage(code);
     notifyListeners();
   }
 

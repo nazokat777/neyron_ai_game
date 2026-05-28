@@ -15,6 +15,19 @@ enum AgeGroup {
     return AgeGroup.senior;
   }
 
+  /// Lokalizatsiya kaliti — `L10n.t(ageGroup.l10nKey)` orqali tarjima qilinadi.
+  String get l10nKey {
+    switch (this) {
+      case AgeGroup.child: return 'age.child';
+      case AgeGroup.youngTeen: return 'age.youngTeen';
+      case AgeGroup.teen: return 'age.teen';
+      case AgeGroup.adult: return 'age.adult';
+      case AgeGroup.midAge: return 'age.midAge';
+      case AgeGroup.senior: return 'age.senior';
+    }
+  }
+
+  /// O'zbekcha nom — AI prompt'i uchun (ai_service.dart) ishlatiladi.
   String get displayName {
     switch (this) {
       case AgeGroup.child: return 'Kichik kashfiyotchi';

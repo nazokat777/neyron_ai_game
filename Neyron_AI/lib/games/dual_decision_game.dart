@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
+import 'adaptive_flow_engine.dart';
 
-/// Ikki qaror — reaksiya tezligi + qoida o'zgarishiga moslashish
+/// Ikki qaror — cheksiz adaptiv reaksiya tezligi + qoida o'zgarishiga moslashish
 /// Ilmiy asos: choice reaction time + cognitive flexibility (anterior cingulate)
 class DualDecisionGame extends StatefulWidget {
   const DualDecisionGame({super.key});
@@ -28,44 +31,36 @@ class _Stimulus {
 
 class _DualDecisionGameState extends State<DualDecisionGame>
     with SingleTickerProviderStateMixin {
-  static const int totalRounds = 20;
-  static const int rulesChangeEvery = 5;
-
-  // Progressive difficulty constants
-  static const Duration _baseTimeLimit = Duration(milliseconds: 2400);
-  static const Duration _minTimeLimit = Duration(milliseconds: 700);
-  static const double _decayPerLevel = 0.9; // 10% qisqarish har darajada
-  static const int _scoreStepPerLevel = 5; // har 5 to'g'ri javobda +1 daraja
-  static const double _fakeBannerProb = 0.18;
-
   final Random _rng = Random();
+  final AdaptiveFlowEngine _engine = AdaptiveFlowEngine(
+    rtThreshold: 0.8, // 0.8 soniyadan tez javob = bonus
+    maxLatency: 999, // sekin javob jazosi yo'q (timeout alohida)
+    alpha: 0.10,
+    beta: 0.16,
+  );
+
   late _Stimulus _stim;
   late _Rule _rule;
-  int _round = 0;
-  int _correct = 0;
-  int _wrong = 0;
-  Duration _totalReaction = Duration.zero;
   bool _finished = false;
   bool? _flashCorrect;
   String? _flashSide;
   DateTime _roundStart = DateTime.now();
   bool _ruleJustChanged = false;
+  bool _levelUp = false;
 
-  // Progressive difficulty state
-  int _level = 1;
-  Duration _currentTimeLimit = _baseTimeLimit;
+  // Per-round vaqt cheklovi (darajaga qarab qisqaradi)
+  int _timeLimitMs = 2400;
   late final AnimationController _timeController;
   _Stimulus? _decoyStim;
   Alignment _decoyAlign = Alignment.topLeft;
   String? _ghostSide; // soxta "noto'g'ri" signal (qisqa flash)
-  int _timeoutCount = 0;
 
   @override
   void initState() {
     super.initState();
     _timeController = AnimationController(
       vsync: this,
-      duration: _baseTimeLimit,
+      duration: Duration(milliseconds: _timeLimitMs),
     )..addStatusListener((status) {
         if (status == AnimationStatus.completed &&
             _flashCorrect == null &&
@@ -84,16 +79,23 @@ class _DualDecisionGameState extends State<DualDecisionGame>
     super.dispose();
   }
 
-  void _nextRound() {
-    _recomputeDifficulty();
+  // Darajadan raund vaqt byudjetini hisoblaydi (cheksiz pasayadi, 600ms pol)
+  int _timeLimitForLevel() => max(600, 2400 - (_engine.level - 1) * 150);
 
-    final isScheduledRuleChange =
-        _round > 0 && _round % rulesChangeEvery == 0;
-    if (isScheduledRuleChange) {
+  void _nextRound() {
+    final lvl = _engine.level;
+    _timeLimitMs = _timeLimitForLevel();
+
+    // Yuqori darajada qoida tez-tez almashadi (har raund ehtimoli oshadi)
+    final ruleSwitchProb = (0.10 + (lvl - 1) * 0.04).clamp(0.0, 0.45);
+    final realRuleChange =
+        _engine.round > 0 && _rng.nextDouble() < ruleSwitchProb;
+    // Soxta "YANGI QOIDA" banneri — 3-darajadan boshlab, qoida o'zgarmaydi
+    final fakeBannerProb = lvl >= 3 ? (0.12 + (lvl - 3) * 0.03).clamp(0.0, 0.30) : 0.0;
+    if (realRuleChange) {
       _rule = _rule == _Rule.byShape ? _Rule.byColor : _Rule.byShape;
       _ruleJustChanged = true;
-    } else if (_level >= 3 && _rng.nextDouble() < _fakeBannerProb) {
-      // Yuqori darajada: soxta "YANGI QOIDA" banneri — qoida o'zgarmaydi
+    } else if (_rng.nextDouble() < fakeBannerProb) {
       _ruleJustChanged = true;
     } else {
       _ruleJustChanged = false;
@@ -106,36 +108,25 @@ class _DualDecisionGameState extends State<DualDecisionGame>
       );
       _flashCorrect = null;
       _flashSide = null;
+      _levelUp = false;
       _roundStart = DateTime.now();
-      _decoyStim = _rollDecoy();
-      _ghostSide = _rollGhostSignal();
+      _decoyStim = _rollDecoy(lvl);
+      _ghostSide = _rollGhostSignal(lvl);
     });
 
     _startRoundTimer();
     _scheduleGhostClear();
-  }
 
-  /// Daraja va vaqt cheklovini qayta hisoblaydi.
-  /// Daraja = 1 + (to'g'ri javoblar / 5).
-  /// Vaqt = base * 0.9^(level-1), [_minTimeLimit, _baseTimeLimit] ga clamp.
-  void _recomputeDifficulty() {
-    _level = 1 + (_correct ~/ _scoreStepPerLevel);
-    final ms = (_baseTimeLimit.inMilliseconds *
-            pow(_decayPerLevel, _level - 1))
-        .round();
-    _currentTimeLimit = Duration(
-      milliseconds: ms.clamp(
-        _minTimeLimit.inMilliseconds,
-        _baseTimeLimit.inMilliseconds,
-      ),
-    );
+    if (realRuleChange) {
+      HapticFeedback.selectionClick();
+    }
   }
 
   /// Chalg'ituvchi shakl: 2-darajadan boshlab paydo bo'ladi.
   /// Ehtimol = 0.25 + (level - 2) * 0.15, max 0.80.
-  _Stimulus? _rollDecoy() {
-    if (_level < 2) return null;
-    final p = (0.25 + (_level - 2) * 0.15).clamp(0.0, 0.80);
+  _Stimulus? _rollDecoy(int lvl) {
+    if (lvl < 2) return null;
+    final p = (0.25 + (lvl - 2) * 0.15).clamp(0.0, 0.80);
     if (_rng.nextDouble() >= p) return null;
     _decoyAlign = const [
       Alignment.topLeft,
@@ -150,10 +141,11 @@ class _DualDecisionGameState extends State<DualDecisionGame>
   }
 
   /// Soxta "to'g'ri javob shu tomonda" signali — 4-darajadan boshlab.
-  /// Foydalanuvchini noto'g'ri tomonga undashga urinadi.
-  String? _rollGhostSignal() {
-    if (_level < 4) return null;
-    if (_rng.nextDouble() >= 0.30) return null;
+  /// Ehtimol darajaga qarab oshadi; foydalanuvchini noto'g'ri tomonga undaydi.
+  String? _rollGhostSignal(int lvl) {
+    if (lvl < 4) return null;
+    final p = (0.25 + (lvl - 4) * 0.05).clamp(0.0, 0.55);
+    if (_rng.nextDouble() >= p) return null;
     // Aniq noto'g'ri tomonni tanlaymiz
     return _correctSide() == 'L' ? 'R' : 'L';
   }
@@ -168,7 +160,7 @@ class _DualDecisionGameState extends State<DualDecisionGame>
 
   void _startRoundTimer() {
     _timeController.stop();
-    _timeController.duration = _currentTimeLimit;
+    _timeController.duration = Duration(milliseconds: _timeLimitMs);
     _timeController.reset();
     _timeController.forward();
   }
@@ -176,22 +168,15 @@ class _DualDecisionGameState extends State<DualDecisionGame>
   void _onTimeout() {
     if (_flashCorrect != null || _finished) return;
     _timeController.stop();
-    _totalReaction += _currentTimeLimit;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: false);
     setState(() {
       _flashCorrect = false;
       _flashSide = null;
-      _wrong++;
-      _timeoutCount++;
+      _levelUp = _engine.level > prevLevel;
     });
-    Future.delayed(const Duration(milliseconds: 380), () {
-      if (!mounted) return;
-      _round++;
-      if (_round >= totalRounds) {
-        _finish();
-      } else {
-        _nextRound();
-      }
-    });
+    HapticFeedback.heavyImpact();
+    Future.delayed(const Duration(milliseconds: 380), _advance);
   }
 
   String _correctSide() {
@@ -206,25 +191,30 @@ class _DualDecisionGameState extends State<DualDecisionGame>
     if (_flashCorrect != null || _finished) return;
     _timeController.stop();
     final correct = side == _correctSide();
-    _totalReaction += DateTime.now().difference(_roundStart);
+    final rt = DateTime.now().difference(_roundStart).inMilliseconds / 1000.0;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: correct, reactionTime: rt);
     setState(() {
       _flashSide = side;
       _flashCorrect = correct;
-      if (correct) {
-        _correct++;
-      } else {
-        _wrong++;
-      }
+      _levelUp = _engine.level > prevLevel;
     });
-    Future.delayed(const Duration(milliseconds: 380), () {
-      if (!mounted) return;
-      _round++;
-      if (_round >= totalRounds) {
-        _finish();
-      } else {
-        _nextRound();
-      }
-    });
+    if (correct) {
+      HapticFeedback.lightImpact();
+      if (_engine.gainedLife) HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
+    Future.delayed(const Duration(milliseconds: 380), _advance);
+  }
+
+  void _advance() {
+    if (!mounted) return;
+    if (_engine.isGameOver) {
+      _finish();
+    } else {
+      _nextRound();
+    }
   }
 
   Future<void> _finish() async {
@@ -232,38 +222,17 @@ class _DualDecisionGameState extends State<DualDecisionGame>
     setState(() => _finished = true);
     final state = context.read<AppState>();
     await state.incrementSessions();
-    final avgMs = totalRounds > 0
-        ? _totalReaction.inMilliseconds / totalRounds
-        : 0;
-    final accuracy = _correct / totalRounds;
-    final accBonus = (accuracy * 15).round();
-    final speedBonus = avgMs < 800
-        ? 15
-        : avgMs < 1200
-            ? 10
-            : avgMs < 1800
-                ? 5
-                : 0;
-    // Yuqori darajaga yetib borgan o'yinchi qo'shimcha mukofot oladi
-    final levelBonus = (_level - 1) * 3;
-    final coins =
-        (5 + accBonus + speedBonus + levelBonus).clamp(1, 60);
+    final coins = (5 + _engine.bestStreak * 2 + _engine.level * 2).clamp(1, 80);
     await state.addCoins(coins);
   }
 
   void _restart() {
     _timeController.stop();
+    _engine.reset();
     setState(() {
-      _round = 0;
-      _correct = 0;
-      _wrong = 0;
-      _totalReaction = Duration.zero;
       _finished = false;
-      _level = 1;
-      _currentTimeLimit = _baseTimeLimit;
       _decoyStim = null;
       _ghostSide = null;
-      _timeoutCount = 0;
       _rule = _Rule.values[_rng.nextInt(_Rule.values.length)];
     });
     _nextRound();
@@ -273,7 +242,7 @@ class _DualDecisionGameState extends State<DualDecisionGame>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Qaror'),
+        title: Text(L10n.t('dual.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -291,7 +260,12 @@ class _DualDecisionGameState extends State<DualDecisionGame>
             ),
           ),
           SafeArea(
-            child: _finished ? _resultView() : _playView(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _finished ? _resultView() : _playView(),
+              ),
+            ),
           ),
         ],
       ),
@@ -311,7 +285,6 @@ class _DualDecisionGameState extends State<DualDecisionGame>
   }
 
   Widget _statusBar() {
-    final progress = _round / totalRounds;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -319,39 +292,17 @@ class _DualDecisionGameState extends State<DualDecisionGame>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              _levelChip(),
+              _livesRow(),
               Text(
-                '${(_round + 1).toString().padLeft(2, '0')} / $totalRounds',
-                style: TextStyle(
-                  color: AppColors.pureWhite.withValues(alpha: 0.6),
-                  fontSize: 12,
+                '${_engine.score}',
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+                  letterSpacing: 1,
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    '$_correct',
-                    style: const TextStyle(
-                      color: AppColors.neuronGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    ' · $_wrong',
-                    style: const TextStyle(
-                      color: AppColors.accentRed,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -361,30 +312,16 @@ class _DualDecisionGameState extends State<DualDecisionGame>
             child: AnimatedBuilder(
               animation: _timeController,
               builder: (context, _) {
-                // Round progress (qatlam 1) — past, statik
-                // Time remaining (qatlam 2) — yuqori, har raundda yangilanadi
                 final timeLeft =
                     (1.0 - _timeController.value).clamp(0.0, 1.0);
                 final urgent = _timeController.value > 0.70;
-                return Stack(
-                  children: [
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 2,
-                      backgroundColor: AppColors.cosmicMid,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.pureWhite.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    LinearProgressIndicator(
-                      value: timeLeft,
-                      minHeight: 2,
-                      backgroundColor: Colors.transparent,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        urgent ? AppColors.accentRed : AppColors.neuronGreen,
-                      ),
-                    ),
-                  ],
+                return LinearProgressIndicator(
+                  value: timeLeft,
+                  minHeight: 2,
+                  backgroundColor: AppColors.cosmicMid,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    urgent ? AppColors.accentRed : AppColors.neuronGreen,
+                  ),
                 );
               },
             ),
@@ -394,10 +331,52 @@ class _DualDecisionGameState extends State<DualDecisionGame>
     );
   }
 
+  Widget _levelChip() {
+    final chip = Text(
+      '${L10n.t('game.level')} ${_engine.level.toString().padLeft(2, '0')}',
+      style: TextStyle(
+        color: _levelUp
+            ? AppColors.plasmaYellow
+            : AppColors.pureWhite.withValues(alpha: 0.45),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    if (!_levelUp) return chip;
+    return chip
+        .animate(key: ValueKey('lvl-${_engine.level}'))
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          duration: 260.ms,
+          curve: Curves.easeOutBack,
+        )
+        .then()
+        .tint(color: AppColors.plasmaYellow, duration: 200.ms);
+  }
+
+  Widget _livesRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_engine.lives, (_) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 1.5),
+          child: Icon(
+            Icons.favorite,
+            size: 14,
+            color: AppColors.accentRed,
+          ),
+        );
+      }),
+    );
+  }
+
   Widget _ruleBanner() {
     final byShape = _rule == _Rule.byShape;
-    final left = byShape ? 'DOIRA' : 'ILIQ';
-    final right = byShape ? 'KVADRAT' : 'SOVUQ';
+    final left = byShape ? L10n.t('dual.circle') : L10n.t('dual.warm');
+    final right = byShape ? L10n.t('dual.square') : L10n.t('dual.cold');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -412,9 +391,9 @@ class _DualDecisionGameState extends State<DualDecisionGame>
                   color: AppColors.plasmaYellow.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'YANGI QOIDA',
-                  style: TextStyle(
+                child: Text(
+                  L10n.t('dual.newRule'),
+                  style: const TextStyle(
                     color: AppColors.plasmaYellow,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -507,7 +486,7 @@ class _DualDecisionGameState extends State<DualDecisionGame>
           ),
         Center(
           child: _shapeView(stimColor)
-              .animate(key: ValueKey('stim-$_round'))
+              .animate(key: ValueKey('stim-${_engine.round}'))
               .fadeIn(duration: 180.ms)
               .scale(
                 begin: const Offset(0.6, 0.6),
@@ -588,17 +567,13 @@ class _DualDecisionGameState extends State<DualDecisionGame>
   }
 
   Widget _resultView() {
-    final accuracy = (_correct / totalRounds * 100).round();
-    final avgMs = totalRounds > 0
-        ? (_totalReaction.inMilliseconds / totalRounds).round()
-        : 0;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'reaksiya',
+            L10n.t('game.over'),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.5),
               fontSize: 12,
@@ -607,54 +582,42 @@ class _DualDecisionGameState extends State<DualDecisionGame>
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '$avgMs',
-                style: const TextStyle(
-                  fontSize: 128,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen,
-                  letterSpacing: -0.04,
-                  height: 1.0,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-              Text(
-                'ms',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
+          Text(
+            '${_engine.score}',
+            style: const TextStyle(
+              fontSize: 128,
+              fontWeight: FontWeight.w600,
+              color: AppColors.neuronGreen,
+              letterSpacing: -0.04,
+              height: 1.0,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           )
               .animate()
               .fadeIn()
               .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutQuart),
-          const SizedBox(height: 48),
-          _statRow('Aniqlik', '$accuracy%'),
+          Text(
+            L10n.t('game.score'),
+            style: TextStyle(
+              color: AppColors.neuronGreen.withValues(alpha: 0.6),
+              fontSize: 13,
+              letterSpacing: 3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 40),
+          _statRow(L10n.t('game.bestLevel'), '${_engine.level}'),
           const SizedBox(height: 10),
-          _statRow('To\'g\'ri', '$_correct / $totalRounds'),
+          _statRow(L10n.t('game.bestStreak'), '${_engine.bestStreak}'),
           const SizedBox(height: 10),
-          _statRow('Xato', '$_wrong'),
-          const SizedBox(height: 10),
-          _statRow('Eng yuqori daraja', '$_level'),
-          if (_timeoutCount > 0) ...[
-            const SizedBox(height: 10),
-            _statRow('Vaqt tugagan', '$_timeoutCount'),
-          ],
+          _statRow(L10n.t('game.rounds'), '${_engine.round}'),
           const SizedBox(height: 48),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _restart,
-                child: const Text('Yana'),
+                child: Text(L10n.t('game.again')),
               ),
               const SizedBox(width: 12),
               OutlinedButton(
@@ -668,7 +631,7 @@ class _DualDecisionGameState extends State<DualDecisionGame>
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Chiqish'),
+                child: Text(L10n.t('game.exit')),
               ),
             ],
           ),

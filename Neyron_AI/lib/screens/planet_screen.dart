@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/app_state.dart';
 import '../services/i18n.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/hero_characters.dart';
 import 'chat_screen.dart';
@@ -53,7 +54,8 @@ class PlanetScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _pill('🔥', '${profile.streakDays}', 'kun', AppColors.plasmaYellow),
+        _pill('🔥', '${profile.streakDays}', L10n.t('planet.day'),
+            AppColors.plasmaYellow),
         _pill('🪙', '${profile.coins}', '', AppColors.neuronGreen),
       ],
     );
@@ -135,15 +137,15 @@ class PlanetScreen extends StatelessWidget {
                   color: AppColors.neuronGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.chat_bubble_outline,
+                    const Icon(Icons.chat_bubble_outline,
                         color: AppColors.neuronGreen, size: 11),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
-                      'Suhbat',
-                      style: TextStyle(
+                      L10n.t('nav.chat'),
+                      style: const TextStyle(
                         color: AppColors.neuronGreen,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -156,7 +158,7 @@ class PlanetScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Salom, ${profile.name}. Boshlaymizmi?',
+            L10n.t('planet.greeting').replaceAll('{name}', profile.name),
             style: const TextStyle(
               fontSize: 15,
               color: AppColors.pureWhite,
@@ -178,7 +180,7 @@ class PlanetScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            'Shogird',
+            L10n.t('planet.apprentice'),
             style: TextStyle(
               fontSize: 11,
               color: AppColors.pureWhite.withValues(alpha: 0.45),
@@ -272,7 +274,7 @@ class PlanetScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Bugun',
+                  L10n.t('planet.today'),
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.pureWhite.withValues(alpha: 0.5),
@@ -342,7 +344,7 @@ class PlanetScreen extends StatelessWidget {
                 const Text('📦', style: TextStyle(fontSize: 28)),
                 const Spacer(),
                 Text(
-                  'Quti',
+                  L10n.t('planet.box'),
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.plasmaYellow.withValues(alpha: 0.85),
@@ -351,9 +353,9 @@ class PlanetScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '3 yangi',
-                  style: TextStyle(
+                Text(
+                  L10n.t('planet.boxNew'),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.pureWhite,
@@ -378,9 +380,11 @@ class PlanetScreen extends StatelessWidget {
         DateTime.now().difference(profile.joinedDate).inDays + 1;
     return Row(
       children: [
-        Expanded(child: _statTile('${profile.totalSessions}', 'sessiya')),
-        Expanded(child: _statTile('$totalXp', 'XP')),
-        Expanded(child: _statTile('$daysWith', 'kun')),
+        Expanded(
+            child: _statTile(
+                '${profile.totalSessions}', L10n.t('planet.session'))),
+        Expanded(child: _statTile('$totalXp', L10n.t('planet.xp'))),
+        Expanded(child: _statTile('$daysWith', L10n.t('planet.days'))),
       ],
     ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.1);
   }

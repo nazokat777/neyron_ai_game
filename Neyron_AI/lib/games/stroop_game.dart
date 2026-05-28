@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
+import 'adaptive_flow_engine.dart';
 
 /// Stroop testi — so'z va uning rangi o'rtasidagi ziddiyatni yengish
 /// Ilmiy asos: J.R. Stroop (1935), prefrontal cortex inhibition
+/// Cheksiz adaptiv rejim: daraja oshgani sayin vaqt qisqaradi va ziddiyat kuchayadi
 class StroopGame extends StatefulWidget {
   const StroopGame({super.key});
 
@@ -16,9 +21,11 @@ class StroopGame extends StatefulWidget {
 }
 
 class _GameColor {
-  final String name;
+  /// Lokalizatsiya kaliti (masalan 'stroop.red'). Solishtirish uchun ham
+  /// ishlatiladi (har rang uchun noyob), ekranda L10n.t orqali tarjima qilinadi.
+  final String nameKey;
   final Color value;
-  const _GameColor(this.name, this.value);
+  const _GameColor(this.nameKey, this.value);
 }
 
 class _Round {
@@ -28,24 +35,31 @@ class _Round {
 }
 
 class _StroopGameState extends State<StroopGame> {
-  static const int totalRounds = 20;
   static const List<_GameColor> palette = [
-    _GameColor('QIZIL', AppColors.gameRed),
-    _GameColor('KO\'K', AppColors.gameBlue),
-    _GameColor('YASHIL', AppColors.gameGreen),
-    _GameColor('SARIQ', AppColors.gameYellow),
+    _GameColor('stroop.red', AppColors.gameRed),
+    _GameColor('stroop.blue', AppColors.gameBlue),
+    _GameColor('stroop.green', AppColors.gameGreen),
+    _GameColor('stroop.yellow', AppColors.gameYellow),
   ];
 
   final Random _rng = Random();
+  final AdaptiveFlowEngine _engine = AdaptiveFlowEngine(
+    rtThreshold: 0.9,
+    maxLatency: 999,
+    alpha: 0.10,
+    beta: 0.16,
+  );
+
   late _Round _current;
-  int _round = 0;
-  int _correct = 0;
-  int _wrong = 0;
-  bool _finished = false;
   int? _flashIndex;
   bool? _flashCorrect;
+  bool _finished = false;
+  bool _levelUp = false;
+
+  double _roundSeconds = 2.5;
+  double _timeLeft = 2.5;
   DateTime _roundStart = DateTime.now();
-  Duration _totalReaction = Duration.zero;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -53,78 +67,111 @@ class _StroopGameState extends State<StroopGame> {
     _nextRound();
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  // D dan (daraja) raund vaqt byudjetini hisoblaydi (cheksiz qisqaradi, 700ms pol)
+  int get _timeLimitMs => max(700, 2500 - (_engine.level - 1) * 150);
+
+  // Daraja oshgani sayin ink ≠ so'z ehtimoli oshadi
+  double get _conflictProbability =>
+      min(0.92, 0.55 + (_engine.level - 1) * 0.05);
+
   void _nextRound() {
     final word = palette[_rng.nextInt(palette.length)];
-    final shouldDiffer = _rng.nextDouble() < 0.75;
+    final shouldDiffer = _rng.nextDouble() < _conflictProbability;
     _GameColor ink;
     if (shouldDiffer) {
       do {
         ink = palette[_rng.nextInt(palette.length)];
-      } while (ink.name == word.name);
+      } while (ink.nameKey == word.nameKey);
     } else {
       ink = word;
     }
+    _roundSeconds = _timeLimitMs / 1000.0;
     setState(() {
       _current = _Round(word: word, ink: ink);
       _flashIndex = null;
       _flashCorrect = null;
+      _levelUp = false;
+      _timeLeft = _roundSeconds;
       _roundStart = DateTime.now();
     });
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (t) {
+      if (!mounted) return;
+      setState(() => _timeLeft -= 0.1);
+      if (_timeLeft <= 0) {
+        t.cancel();
+        _onTimeout();
+      }
+    });
+  }
+
+  void _onTimeout() {
+    if (_flashIndex != null || _finished) return;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: false);
+    setState(() {
+      _flashIndex = -1;
+      _flashCorrect = false;
+      _levelUp = _engine.level > prevLevel;
+    });
+    HapticFeedback.heavyImpact();
+    _timer = Timer(const Duration(milliseconds: 600), _advance);
   }
 
   void _onTap(int index) {
     if (_flashIndex != null || _finished) return;
+    _timer?.cancel();
     final chosen = palette[index];
-    final correct = chosen.name == _current.ink.name;
-    _totalReaction += DateTime.now().difference(_roundStart);
-
+    final correct = chosen.nameKey == _current.ink.nameKey;
+    final rt = DateTime.now().difference(_roundStart).inMilliseconds / 1000.0;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: correct, reactionTime: rt);
     setState(() {
       _flashIndex = index;
       _flashCorrect = correct;
-      if (correct) {
-        _correct++;
-      } else {
-        _wrong++;
-      }
+      _levelUp = _engine.level > prevLevel;
     });
+    if (correct) {
+      HapticFeedback.lightImpact();
+      if (_engine.gainedLife) HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
+    _timer = Timer(const Duration(milliseconds: 480), _advance);
+  }
 
-    Future.delayed(const Duration(milliseconds: 480), () {
-      if (!mounted) return;
-      _round++;
-      if (_round >= totalRounds) {
-        _finish();
-      } else {
-        _nextRound();
-      }
-    });
+  void _advance() {
+    if (!mounted) return;
+    if (_engine.isGameOver) {
+      _finish();
+    } else {
+      _nextRound();
+    }
   }
 
   Future<void> _finish() async {
+    _timer?.cancel();
     setState(() => _finished = true);
     final state = context.read<AppState>();
     await state.incrementSessions();
-    final avgMs = totalRounds > 0
-        ? _totalReaction.inMilliseconds / totalRounds
-        : 0;
-    final accuracy = _correct / totalRounds;
-    final accBonus = (accuracy * 15).round();
-    final speedBonus = avgMs < 1500
-        ? 10
-        : avgMs < 2500
-            ? 5
-            : 0;
-    final coins = (5 + accBonus + speedBonus).clamp(1, 50);
+    final coins = (5 + _engine.bestStreak * 2 + _engine.level * 2).clamp(1, 80);
     await state.addCoins(coins);
   }
 
   void _restart() {
-    setState(() {
-      _round = 0;
-      _correct = 0;
-      _wrong = 0;
-      _finished = false;
-      _totalReaction = Duration.zero;
-    });
+    _timer?.cancel();
+    _engine.reset();
+    setState(() => _finished = false);
     _nextRound();
   }
 
@@ -132,7 +179,7 @@ class _StroopGameState extends State<StroopGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stroop'),
+        title: Text(L10n.t('stroop.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -162,7 +209,12 @@ class _StroopGameState extends State<StroopGame> {
               ),
             ),
           SafeArea(
-            child: _finished ? _resultView() : _playView(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _finished ? _resultView() : _playView(),
+              ),
+            ),
           ),
         ],
       ),
@@ -182,7 +234,10 @@ class _StroopGameState extends State<StroopGame> {
   }
 
   Widget _statusBar() {
-    final progress = _round / totalRounds;
+    final timeFrac =
+        _roundSeconds > 0 ? (_timeLeft / _roundSeconds).clamp(0.0, 1.0) : 0.0;
+    final urgent = _timeLeft <= 1;
+    final timeColor = urgent ? AppColors.accentRed : AppColors.neuronGreen;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -190,39 +245,17 @@ class _StroopGameState extends State<StroopGame> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              _levelChip(),
+              _livesRow(),
               Text(
-                '${(_round + 1).toString().padLeft(2, '0')} / $totalRounds',
-                style: TextStyle(
-                  color: AppColors.pureWhite.withValues(alpha: 0.6),
-                  fontSize: 12,
+                '${_engine.score}',
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+                  letterSpacing: 1,
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    '$_correct',
-                    style: const TextStyle(
-                      color: AppColors.neuronGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    ' · $_wrong',
-                    style: const TextStyle(
-                      color: AppColors.accentRed,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -230,15 +263,56 @@ class _StroopGameState extends State<StroopGame> {
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: progress,
+              value: timeFrac,
               minHeight: 2,
               backgroundColor: AppColors.cosmicMid,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.neuronGreen),
+              valueColor: AlwaysStoppedAnimation<Color>(timeColor),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _levelChip() {
+    final chip = Text(
+      '${L10n.t('game.level')} ${_engine.level.toString().padLeft(2, '0')}',
+      style: TextStyle(
+        color: _levelUp
+            ? AppColors.plasmaYellow
+            : AppColors.pureWhite.withValues(alpha: 0.45),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    if (!_levelUp) return chip;
+    return chip
+        .animate(key: ValueKey('lvl-${_engine.level}'))
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          duration: 260.ms,
+          curve: Curves.easeOutBack,
+        )
+        .then()
+        .tint(color: AppColors.plasmaYellow, duration: 200.ms);
+  }
+
+  Widget _livesRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_engine.lives, (i) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 1.5),
+          child: Icon(
+            Icons.favorite,
+            size: 14,
+            color: AppColors.accentRed,
+          ),
+        );
+      }),
     );
   }
 
@@ -249,7 +323,7 @@ class _StroopGameState extends State<StroopGame> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'RANGI',
+            L10n.t('stroop.prompt'),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.4),
               fontSize: 11,
@@ -261,9 +335,9 @@ class _StroopGameState extends State<StroopGame> {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              _current.word.name,
+              L10n.t(_current.word.nameKey),
               key: ValueKey(
-                  '${_current.word.name}-${_current.ink.value}-$_round'),
+                  '${_current.word.nameKey}-${_current.ink.value}-${_engine.round}'),
               style: TextStyle(
                 fontSize: 96,
                 fontWeight: FontWeight.w600,
@@ -291,9 +365,8 @@ class _StroopGameState extends State<StroopGame> {
         children: List.generate(palette.length, (i) {
           final c = palette[i];
           final isFlash = _flashIndex == i;
-          final correctAnswer = _flashIndex != null &&
-              c.name == _current.ink.name &&
-              !isFlash;
+          final correctAnswer =
+              _flashIndex != null && c.nameKey == _current.ink.nameKey && !isFlash;
           return GestureDetector(
             onTap: () => _onTap(i),
             child: AnimatedContainer(
@@ -329,17 +402,13 @@ class _StroopGameState extends State<StroopGame> {
   }
 
   Widget _resultView() {
-    final accuracy = (_correct / totalRounds * 100).round();
-    final avgSec = totalRounds > 0
-        ? (_totalReaction.inMilliseconds / totalRounds / 1000).toStringAsFixed(1)
-        : '0.0';
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'aniqlik',
+            L10n.t('game.over'),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.5),
               fontSize: 12,
@@ -348,48 +417,42 @@ class _StroopGameState extends State<StroopGame> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '$accuracy',
-                style: const TextStyle(
-                  fontSize: 144,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen,
-                  letterSpacing: -0.04,
-                  height: 1.0,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-              Text(
-                '%',
-                style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
+          Text(
+            '${_engine.score}',
+            style: const TextStyle(
+              fontSize: 128,
+              fontWeight: FontWeight.w600,
+              color: AppColors.neuronGreen,
+              letterSpacing: -0.04,
+              height: 1.0,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           )
               .animate()
               .fadeIn()
               .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutQuart),
-          const SizedBox(height: 48),
-          _statRow('To\'g\'ri', '$_correct / $totalRounds'),
+          Text(
+            L10n.t('game.score'),
+            style: TextStyle(
+              color: AppColors.neuronGreen.withValues(alpha: 0.6),
+              fontSize: 13,
+              letterSpacing: 3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 40),
+          _statRow(L10n.t('game.bestLevel'), '${_engine.level}'),
           const SizedBox(height: 10),
-          _statRow('O\'rtacha vaqt', '$avgSec s'),
+          _statRow(L10n.t('game.bestStreak'), '${_engine.bestStreak}'),
           const SizedBox(height: 10),
-          _statRow('Xato', '$_wrong'),
+          _statRow(L10n.t('game.rounds'), '${_engine.round}'),
           const SizedBox(height: 48),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _restart,
-                child: const Text('Yana'),
+                child: Text(L10n.t('game.again')),
               ),
               const SizedBox(width: 12),
               OutlinedButton(
@@ -398,12 +461,12 @@ class _StroopGameState extends State<StroopGame> {
                   foregroundColor: AppColors.pureWhite,
                   side: BorderSide(
                       color: AppColors.pureWhite.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Chiqish'),
+                child: Text(L10n.t('game.exit')),
               ),
             ],
           ),

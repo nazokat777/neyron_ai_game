@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/message.dart';
 import '../services/app_state.dart';
 import '../services/i18n.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/hero_characters.dart';
 
@@ -124,7 +125,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'TAYYOR',
+                      L10n.t('chat.ready'),
                       style: TextStyle(
                         fontSize: 10,
                         color: AppColors.pureWhite.withValues(alpha: 0.55),
@@ -158,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                'CHOY TAYYOR',
+                L10n.t('chat.teaReady'),
                 style: TextStyle(
                   color: AppColors.professorWarmth.withValues(alpha: 0.85),
                   fontSize: 11,
@@ -184,7 +185,7 @@ class _ChatScreenState extends State<ChatScreen> {
               .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuart),
           const SizedBox(height: 18),
           Text(
-            'Savolingizni pastdan yozing.',
+            L10n.t('chat.writeBelow'),
             style: TextStyle(
               fontSize: 14,
               color: AppColors.pureWhite.withValues(alpha: 0.45),
@@ -227,22 +228,22 @@ class _ChatScreenState extends State<ChatScreen> {
           const Icon(Icons.vpn_key_outlined,
               color: AppColors.plasmaYellow, size: 20),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI suhbat uchun',
-                  style: TextStyle(
+                  L10n.t('chat.apiTitle'),
+                  style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Pasport → API kalitini kiriting',
-                  style: TextStyle(
+                  L10n.t('chat.apiSub'),
+                  style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 13,
                   ),
@@ -277,7 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
             child: Text(
-              isProfessor ? I18n.professorName.toUpperCase() : 'SIZ',
+              isProfessor ? I18n.professorName.toUpperCase() : L10n.t('chat.you'),
               style: TextStyle(
                 fontSize: 10,
                 color: isProfessor
@@ -340,7 +341,8 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         children: [
           Text(
-            '${I18n.professorName.toUpperCase()} YOZAYOTIR',
+            L10n.t('chat.typing')
+                .replaceAll('{prof}', I18n.professorName.toUpperCase()),
             style: TextStyle(
               fontSize: 10,
               color: AppColors.professorWarmth.withValues(alpha: 0.7),
@@ -416,7 +418,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   height: 1.4,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Savolingiz...',
+                  hintText: L10n.t('chat.inputHint'),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   hintStyle: TextStyle(

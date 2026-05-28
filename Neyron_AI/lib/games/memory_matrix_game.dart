@@ -1,12 +1,17 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
+import 'adaptive_flow_engine.dart';
 
 /// Memory Matrix — naqshni eslab qolish va takrorlash
-/// Ilmiy asos: Ishchi xotira (Working Memory), dorsolateral prefrontal cortex
+/// Cheksiz adaptiv ishchi xotira (Working Memory), dorsolateral prefrontal cortex
 class MemoryMatrixGame extends StatefulWidget {
   const MemoryMatrixGame({super.key});
 
@@ -14,58 +19,61 @@ class MemoryMatrixGame extends StatefulWidget {
   State<MemoryMatrixGame> createState() => _MemoryMatrixGameState();
 }
 
-enum _GamePhase { ready, memorize, recall, correct, wrong, finished }
+enum _GamePhase { ready, memorize, recall, correct, wrong }
 
 class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
-  // Daraja → grid kattaligi va belgilangan kataklar soni
-  int _level = 1;
+  final Random _rng = Random();
+  final AdaptiveFlowEngine _engine = AdaptiveFlowEngine(alpha: 0.16, beta: 0.20);
+
   late int _gridSize;
   late int _targetCount;
   late Set<int> _target;
   Set<int> _selected = {};
   _GamePhase _phase = _GamePhase.ready;
-  int _score = 0;
-  int _lives = 3;
+  bool _finished = false;
+  bool _levelUp = false;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startLevel();
+    _nextRound();
   }
 
-  void _startLevel() {
-    final cfg = _configFor(_level);
-    _gridSize = cfg.$1;
-    _targetCount = cfg.$2;
-    _target = _randomCells(_gridSize * _gridSize, _targetCount);
-    _selected = {};
-    _phase = _GamePhase.ready;
-    setState(() {});
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _nextRound() {
+    final lvl = _engine.level;
+    _gridSize = (3 + (lvl - 1) ~/ 2).clamp(3, 6);
+    final cells = _gridSize * _gridSize;
+    _targetCount = (3 + (lvl - 1)).clamp(3, cells - 1);
+    _target = _randomCells(cells, _targetCount);
+    setState(() {
+      _selected = {};
+      _phase = _GamePhase.ready;
+      _levelUp = false;
+    });
 
     // 1 soniya kutib, memorize fazaga o'tish
-    Future.delayed(const Duration(milliseconds: 800), () {
+    _timer?.cancel();
+    _timer = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       setState(() => _phase = _GamePhase.memorize);
-      // Memorize davomiyligi darajaga qarab
+      // Memorize davomiyligi naqsh uzunligiga qarab
       final memorizeMs = 1500 + (_targetCount * 300);
-      Future.delayed(Duration(milliseconds: memorizeMs), () {
+      _timer = Timer(Duration(milliseconds: memorizeMs), () {
         if (!mounted) return;
         setState(() => _phase = _GamePhase.recall);
       });
     });
   }
 
-  /// Daraja → (grid, target count)
-  (int, int) _configFor(int level) {
-    if (level <= 2) return (3, 3 + level);    // 3x3: 4, 5
-    if (level <= 5) return (4, 4 + level);    // 4x4: 7, 8, 9
-    if (level <= 8) return (5, 6 + level - 5); // 5x5: 7, 8, 9
-    return (6, 9 + (level - 8).clamp(0, 9));   // 6x6+
-  }
-
   Set<int> _randomCells(int total, int count) {
-    final rng = Random();
-    final all = List.generate(total, (i) => i)..shuffle(rng);
+    final all = List.generate(total, (i) => i)..shuffle(_rng);
     return all.take(count).toSet();
   }
 
@@ -73,148 +81,124 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
     if (_phase != _GamePhase.recall) return;
     if (_selected.contains(index)) return;
 
-    setState(() {
-      _selected.add(index);
-    });
+    setState(() => _selected.add(index));
 
     if (_target.contains(index)) {
-      // To'g'ri
-      if (_selected.length >= _targetCount &&
-          _selected.intersection(_target).length == _targetCount) {
-        _winLevel();
+      // To'g'ri katak — butun naqsh topilganini tekshiramiz
+      if (_selected.intersection(_target).length == _targetCount) {
+        _evaluate(true);
       }
     } else {
-      // Xato
-      _loseLevel();
+      // Bitta xato katak = raund muvaffaqiyatsiz
+      _evaluate(false);
     }
   }
 
-  void _winLevel() {
+  void _evaluate(bool correct) {
+    _timer?.cancel();
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: correct, reactionTime: null);
     setState(() {
-      _phase = _GamePhase.correct;
-      _score += _targetCount * 10;
+      _phase = correct ? _GamePhase.correct : _GamePhase.wrong;
+      _levelUp = _engine.level > prevLevel;
     });
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      _level++;
-      _startLevel();
-    });
+    if (correct) {
+      HapticFeedback.lightImpact();
+      if (_engine.gainedLife) HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
+    _timer = Timer(const Duration(milliseconds: 1200), _advance);
   }
 
-  void _loseLevel() {
-    setState(() {
-      _phase = _GamePhase.wrong;
-      _lives--;
-    });
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      if (_lives <= 0) {
-        _finish();
-      } else {
-        _startLevel();
-      }
-    });
+  void _advance() {
+    if (!mounted) return;
+    if (_engine.isGameOver) {
+      _finish();
+    } else {
+      _nextRound();
+    }
   }
 
   Future<void> _finish() async {
-    setState(() => _phase = _GamePhase.finished);
+    _timer?.cancel();
+    setState(() => _finished = true);
     final state = context.read<AppState>();
     await state.incrementSessions();
-    await state.addCoins((_score / 5).round().clamp(1, 100));
+    final coins = (5 + _engine.bestStreak * 2 + _engine.level * 2).clamp(1, 80);
+    await state.addCoins(coins);
   }
 
   void _restart() {
-    setState(() {
-      _level = 1;
-      _score = 0;
-      _lives = 3;
-      _selected = {};
-    });
-    _startLevel();
+    _timer?.cancel();
+    _engine.reset();
+    setState(() => _finished = false);
+    _nextRound();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        title: Text(L10n.t('matrix.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Matritsa'),
       ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 4),
-              _heroHeader(),
-              const SizedBox(height: 24),
-              Expanded(child: Center(child: _buildGrid())),
-              if (_phase == _GamePhase.finished) _resultCard(),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _heroHeader() {
-    final phase = _phaseInfo();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
+      body: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _miniStat('DARAJA', '$_level'),
-              _livesIndicator(),
-              _miniStat('BALL', '$_score'),
-            ],
+          Container(
+            decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
           ),
-          const SizedBox(height: 22),
-          Text(
-            phase.$1,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w600,
-              color: phase.$2,
-              letterSpacing: -0.02,
-              height: 1.0,
+          const Positioned.fill(
+            child: DotGridBackdrop(
+              spacing: 28,
+              dotSize: 1.0,
+              alpha: 0.06,
+              child: SizedBox.expand(),
             ),
-          )
-              .animate(key: ValueKey('phase-$_phase'))
-              .fadeIn(duration: 200.ms)
-              .slideY(begin: 0.1, end: 0, duration: 220.ms),
+          ),
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _finished ? _resultView() : _playView(),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _miniStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+  Widget _playView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          _statusBar(),
+          const SizedBox(height: 22),
+          _phaseLabel(),
+          Expanded(child: Center(child: _buildGrid())),
+          const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        _levelChip(),
+        _livesRow(),
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.pureWhite.withValues(alpha: 0.45),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
+          '${_engine.score}',
           style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
-            letterSpacing: -0.02,
-            height: 1.0,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1,
             fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
@@ -222,72 +206,92 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
     );
   }
 
-  Widget _livesIndicator() {
-    return Column(
-      children: [
-        Text(
-          'HAYOT',
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.pureWhite.withValues(alpha: 0.45),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (i) {
-            final lit = i < _lives;
-            return Container(
-              margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: lit
-                    ? AppColors.accentRed
-                    : AppColors.pureWhite.withValues(alpha: 0.12),
-              ),
-            );
-          }),
-        ),
-      ],
+  Widget _levelChip() {
+    final chip = Text(
+      '${L10n.t('game.level')} ${_engine.level.toString().padLeft(2, '0')}',
+      style: TextStyle(
+        color: _levelUp
+            ? AppColors.plasmaYellow
+            : AppColors.pureWhite.withValues(alpha: 0.45),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
     );
+    if (!_levelUp) return chip;
+    return chip
+        .animate(key: ValueKey('lvl-${_engine.level}'))
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          duration: 260.ms,
+          curve: Curves.easeOutBack,
+        )
+        .then()
+        .tint(color: AppColors.plasmaYellow, duration: 200.ms);
+  }
+
+  Widget _livesRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_engine.lives, (i) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 1.5),
+          child: Icon(
+            Icons.favorite,
+            size: 14,
+            color: AppColors.accentRed,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _phaseLabel() {
+    final info = _phaseInfo();
+    return Text(
+      info.$1,
+      style: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: info.$2,
+        letterSpacing: -0.02,
+        height: 1.0,
+      ),
+    )
+        .animate(key: ValueKey('phase-$_phase'))
+        .fadeIn(duration: 200.ms)
+        .slideY(begin: 0.1, end: 0, duration: 220.ms);
   }
 
   (String, Color) _phaseInfo() {
     switch (_phase) {
       case _GamePhase.ready:
-        return ('Tayyor', AppColors.pureWhite.withValues(alpha: 0.55));
+        return (L10n.t('game.ready'), AppColors.pureWhite.withValues(alpha: 0.55));
       case _GamePhase.memorize:
-        return ('Eslab qoling', AppColors.plasmaYellow);
+        return (L10n.t('matrix.memorize'), AppColors.plasmaYellow);
       case _GamePhase.recall:
-        return ('Takrorlang', AppColors.neuronGreen);
+        return (L10n.t('matrix.recall'), AppColors.neuronGreen);
       case _GamePhase.correct:
-        return ('Topildi', AppColors.neuronGreen);
+        return (L10n.t('matrix.found'), AppColors.neuronGreen);
       case _GamePhase.wrong:
-        return ('Eslamadingiz', AppColors.accentRed);
-      case _GamePhase.finished:
-        return ('Tugadi', AppColors.pureWhite);
+        return (L10n.t('matrix.missed'), AppColors.accentRed);
     }
   }
 
   Widget _buildGrid() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: _gridSize,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: _gridSize * _gridSize,
-          itemBuilder: (_, i) => _buildCell(i),
+    return AspectRatio(
+      aspectRatio: 1,
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _gridSize,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
         ),
+        itemCount: _gridSize * _gridSize,
+        itemBuilder: (_, i) => _buildCell(i),
       ),
     );
   }
@@ -301,21 +305,23 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
 
     switch (_phase) {
       case _GamePhase.memorize:
-        // Naqshni ko'rsatish
         bg = isTarget
             ? AppColors.professorWarmth.withValues(alpha: 0.55)
             : AppColors.cosmicMid;
         if (isTarget) {
-          icon = const Icon(Icons.star_rounded, color: AppColors.pureWhite, size: 24);
+          icon = const Icon(Icons.star_rounded,
+              color: AppColors.pureWhite, size: 24);
         }
         break;
       case _GamePhase.recall:
         if (isSelected && isTarget) {
           bg = AppColors.neuronGreen.withValues(alpha: 0.5);
-          icon = const Icon(Icons.check_rounded, color: AppColors.pureWhite, size: 22);
+          icon = const Icon(Icons.check_rounded,
+              color: AppColors.pureWhite, size: 22);
         } else if (isSelected && !isTarget) {
           bg = AppColors.accentRed.withValues(alpha: 0.5);
-          icon = const Icon(Icons.close_rounded, color: AppColors.pureWhite, size: 22);
+          icon = const Icon(Icons.close_rounded,
+              color: AppColors.pureWhite, size: 22);
         } else {
           bg = AppColors.cosmicMid;
         }
@@ -325,16 +331,19 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
             ? AppColors.neuronGreen.withValues(alpha: 0.5)
             : AppColors.cosmicMid;
         if (isTarget) {
-          icon = const Icon(Icons.check_rounded, color: AppColors.pureWhite, size: 22);
+          icon = const Icon(Icons.check_rounded,
+              color: AppColors.pureWhite, size: 22);
         }
         break;
       case _GamePhase.wrong:
         if (isTarget) {
           bg = AppColors.professorWarmth.withValues(alpha: 0.4);
-          icon = const Icon(Icons.star_rounded, color: AppColors.pureWhite, size: 22);
+          icon = const Icon(Icons.star_rounded,
+              color: AppColors.pureWhite, size: 22);
         } else if (isSelected) {
           bg = AppColors.accentRed.withValues(alpha: 0.5);
-          icon = const Icon(Icons.close_rounded, color: AppColors.pureWhite, size: 22);
+          icon = const Icon(Icons.close_rounded,
+              color: AppColors.pureWhite, size: 22);
         } else {
           bg = AppColors.cosmicMid;
         }
@@ -359,25 +368,26 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
     );
   }
 
-  Widget _resultCard() {
+  Widget _resultView() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.all(24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'ball',
+            L10n.t('game.over'),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.5),
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 2,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            '$_score',
+            '${_engine.score}',
             style: const TextStyle(
-              fontSize: 96,
+              fontSize: 128,
               fontWeight: FontWeight.w600,
               color: AppColors.neuronGreen,
               letterSpacing: -0.04,
@@ -388,22 +398,28 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
               .animate()
               .fadeIn()
               .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutQuart),
-          const SizedBox(height: 14),
           Text(
-            'Daraja $_level',
+            L10n.t('game.score'),
             style: TextStyle(
-              color: AppColors.pureWhite.withValues(alpha: 0.6),
-              fontSize: 14,
-              fontFeatures: const [FontFeature.tabularFigures()],
+              color: AppColors.neuronGreen.withValues(alpha: 0.6),
+              fontSize: 13,
+              letterSpacing: 3,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 40),
+          _statRow(L10n.t('game.bestLevel'), '${_engine.level}'),
+          const SizedBox(height: 10),
+          _statRow(L10n.t('game.bestStreak'), '${_engine.bestStreak}'),
+          const SizedBox(height: 10),
+          _statRow(L10n.t('game.rounds'), '${_engine.round}'),
+          const SizedBox(height: 48),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _restart,
-                child: const Text('Yana'),
+                child: Text(L10n.t('game.again')),
               ),
               const SizedBox(width: 12),
               OutlinedButton(
@@ -412,14 +428,49 @@ class _MemoryMatrixGameState extends State<MemoryMatrixGame> {
                   foregroundColor: AppColors.pureWhite,
                   side: BorderSide(
                       color: AppColors.pureWhite.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Chiqish'),
+                child: Text(L10n.t('game.exit')),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statRow(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.pureWhite.withValues(alpha: 0.08),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.pureWhite.withValues(alpha: 0.55),
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),

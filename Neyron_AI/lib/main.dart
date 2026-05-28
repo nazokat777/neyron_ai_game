@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'services/app_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
-import 'games/ikki_qaror_game.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,15 +23,17 @@ class NeyronAiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool openIkkiGame = bool.fromEnvironment('OPEN_IK_GAME', defaultValue: false);
-
     return ChangeNotifierProvider(
       create: (_) => AppState(),
-      child: MaterialApp(
-        title: 'Neyron AI',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: openIkkiGame ? const IkkiQarorGameScreen() : const SplashScreen(),
+      // Til o'zgarganda butun ilova qayta render bo'ladi (faqat languageCode'ga ulangan)
+      child: Selector<AppState, String>(
+        selector: (_, state) => state.languageCode,
+        builder: (context, lang, child) => MaterialApp(
+          title: 'Neyron AI',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          home: const SplashScreen(),
+        ),
       ),
     );
   }

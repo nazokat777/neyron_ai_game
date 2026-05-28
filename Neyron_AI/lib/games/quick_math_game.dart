@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
+import 'adaptive_flow_engine.dart';
 
-/// Tez hisob — arifmetik chaqqonlik va ishchi xotira
-/// Ilmiy asos: parietal cortex (raqamlar bilan ishlash) + prefrontal (qaror)
+/// Tez hisob — cheksiz adaptiv arifmetik chaqqonlik
+/// Ilmiy asos: parietal cortex (raqamlar) + prefrontal (qaror)
 class QuickMathGame extends StatefulWidget {
   const QuickMathGame({super.key});
 
@@ -41,19 +44,24 @@ class _Question {
 }
 
 class _QuickMathGameState extends State<QuickMathGame> {
-  static const int totalRounds = 15;
-  static const int secondsPerRound = 8;
-
   final Random _rng = Random();
+  final AdaptiveFlowEngine _engine = AdaptiveFlowEngine(
+    rtThreshold: 2.0, // 2 soniyadan tez javob = bonus
+    maxLatency: 999, // sekin javob jazosi yo'q (timeout alohida)
+    alpha: 0.10,
+    beta: 0.16,
+  );
+
   late _Question _q;
-  int _round = 0;
-  int _correct = 0;
-  int _wrong = 0;
   int? _flashIndex;
   bool? _flashCorrect;
   bool _showAnswer = false;
   bool _finished = false;
-  int _timeLeft = secondsPerRound;
+  bool _levelUp = false;
+
+  double _roundSeconds = 8;
+  double _timeLeft = 8;
+  DateTime _roundStart = DateTime.now();
   Timer? _timer;
 
   @override
@@ -68,68 +76,80 @@ class _QuickMathGameState extends State<QuickMathGame> {
     super.dispose();
   }
 
+  // D dan raund vaqt byudjetini hisoblaydi (cheksiz pasayadi, 2s pol)
+  double _secondsForD() => max(2.0, 8.0 - (_engine.d - 1) * 0.5);
+
   void _nextRound() {
+    final lvl = _engine.level;
     final op = _Op.values[_rng.nextInt(_Op.values.length)];
     int a, b, answer;
     switch (op) {
       case _Op.add:
-        a = _rng.nextInt(40) + 10;
-        b = _rng.nextInt(40) + 10;
+        a = _rng.nextInt(20 + lvl * 15) + 10;
+        b = _rng.nextInt(20 + lvl * 15) + 10;
         answer = a + b;
         break;
       case _Op.sub:
-        a = _rng.nextInt(60) + 30;
+        a = _rng.nextInt(40 + lvl * 20) + 30;
         b = _rng.nextInt(a - 5) + 5;
         answer = a - b;
         break;
       case _Op.mul:
-        a = _rng.nextInt(11) + 2;
-        b = _rng.nextInt(11) + 2;
+        a = _rng.nextInt(6 + lvl * 2) + 2;
+        b = _rng.nextInt(9 + lvl) + 2;
         answer = a * b;
         break;
     }
-    final options = _buildOptions(answer);
+    final options = _buildOptions(answer, lvl);
+    _roundSeconds = _secondsForD();
     setState(() {
       _q = _Question(a: a, b: b, op: op, answer: answer, options: options);
       _flashIndex = null;
       _flashCorrect = null;
       _showAnswer = false;
-      _timeLeft = secondsPerRound;
+      _levelUp = false;
+      _timeLeft = _roundSeconds;
+      _roundStart = DateTime.now();
     });
     _startTimer();
   }
 
-  List<int> _buildOptions(int answer) {
+  List<int> _buildOptions(int answer, int lvl) {
+    // Yuqori darajada chalg'ituvchilar javobga yaqinroq
+    final maxDelta = max(3, 15 - lvl * 2);
     final set = <int>{answer};
     while (set.length < 4) {
-      final delta = (_rng.nextInt(15) + 1) * (_rng.nextBool() ? 1 : -1);
+      final delta = (_rng.nextInt(maxDelta) + 1) * (_rng.nextBool() ? 1 : -1);
       final v = answer + delta;
       if (v >= 0) set.add(v);
     }
-    final list = set.toList()..shuffle(_rng);
-    return list;
+    return set.toList()..shuffle(_rng);
   }
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (t) {
       if (!mounted) return;
-      setState(() => _timeLeft--);
+      setState(() => _timeLeft -= 0.1);
       if (_timeLeft <= 0) {
-        _timer?.cancel();
-        _timeout();
+        t.cancel();
+        _onTimeout();
       }
     });
   }
 
-  void _timeout() {
+  void _onTimeout() {
+    if (_flashIndex != null || _finished) return;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: false);
     setState(() {
-      _wrong++;
       _flashIndex = -1;
       _flashCorrect = false;
       _showAnswer = true;
+      _levelUp = _engine.level > prevLevel;
     });
-    Future.delayed(const Duration(milliseconds: 900), _advance);
+    HapticFeedback.heavyImpact();
+    _timer = Timer(const Duration(milliseconds: 900), _advance);
   }
 
   void _onTap(int index) {
@@ -137,23 +157,27 @@ class _QuickMathGameState extends State<QuickMathGame> {
     _timer?.cancel();
     final chosen = _q.options[index];
     final correct = chosen == _q.answer;
+    final rt = DateTime.now().difference(_roundStart).inMilliseconds / 1000.0;
+    final prevLevel = _engine.level;
+    _engine.registerRound(correct: correct, reactionTime: rt);
     setState(() {
       _flashIndex = index;
       _flashCorrect = correct;
       _showAnswer = true;
-      if (correct) {
-        _correct++;
-      } else {
-        _wrong++;
-      }
+      _levelUp = _engine.level > prevLevel;
     });
-    Future.delayed(const Duration(milliseconds: 700), _advance);
+    if (correct) {
+      HapticFeedback.lightImpact();
+      if (_engine.gainedLife) HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
+    _timer = Timer(const Duration(milliseconds: 650), _advance);
   }
 
   void _advance() {
     if (!mounted) return;
-    _round++;
-    if (_round >= totalRounds) {
+    if (_engine.isGameOver) {
       _finish();
     } else {
       _nextRound();
@@ -165,19 +189,14 @@ class _QuickMathGameState extends State<QuickMathGame> {
     setState(() => _finished = true);
     final state = context.read<AppState>();
     await state.incrementSessions();
-    final accuracy = _correct / totalRounds;
-    final accBonus = (accuracy * 20).round();
-    final coins = (5 + accBonus).clamp(1, 50);
+    final coins = (5 + _engine.bestStreak * 2 + _engine.level * 2).clamp(1, 80);
     await state.addCoins(coins);
   }
 
   void _restart() {
-    setState(() {
-      _round = 0;
-      _correct = 0;
-      _wrong = 0;
-      _finished = false;
-    });
+    _timer?.cancel();
+    _engine.reset();
+    setState(() => _finished = false);
     _nextRound();
   }
 
@@ -185,7 +204,7 @@ class _QuickMathGameState extends State<QuickMathGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hisob'),
+        title: Text(L10n.t('math.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -203,7 +222,12 @@ class _QuickMathGameState extends State<QuickMathGame> {
             ),
           ),
           SafeArea(
-            child: _finished ? _resultView() : _playView(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _finished ? _resultView() : _playView(),
+              ),
+            ),
           ),
         ],
       ),
@@ -227,39 +251,26 @@ class _QuickMathGameState extends State<QuickMathGame> {
   }
 
   Widget _statusBar() {
-    final timeFrac = _timeLeft / secondsPerRound;
-    final urgent = _timeLeft <= 3;
+    final timeFrac = _roundSeconds > 0 ? (_timeLeft / _roundSeconds).clamp(0.0, 1.0) : 0.0;
+    final urgent = _timeLeft <= 2;
     final timeColor = urgent ? AppColors.accentRed : AppColors.neuronGreen;
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            _levelChip(),
+            _livesRow(),
             Text(
-              '${(_round + 1).toString().padLeft(2, '0')} / $totalRounds',
-              style: TextStyle(
-                color: AppColors.pureWhite.withValues(alpha: 0.6),
-                fontSize: 12,
+              '$_engineScore',
+              style: const TextStyle(
+                color: AppColors.pureWhite,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-                fontFeatures: const [FontFeature.tabularFigures()],
+                letterSpacing: 1,
+                fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-            Text(
-              '${_timeLeft}s',
-              style: TextStyle(
-                color: timeColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            )
-                .animate(
-                  target: urgent ? 1 : 0,
-                  onPlay: (c) => c.repeat(reverse: true),
-                )
-                .fadeIn(begin: 0.5, duration: 500.ms),
           ],
         ),
         const SizedBox(height: 12),
@@ -276,11 +287,55 @@ class _QuickMathGameState extends State<QuickMathGame> {
     );
   }
 
+  int get _engineScore => _engine.score;
+
+  Widget _levelChip() {
+    final chip = Text(
+      '${L10n.t('game.level')} ${_engine.level.toString().padLeft(2, '0')}',
+      style: TextStyle(
+        color: _levelUp
+            ? AppColors.plasmaYellow
+            : AppColors.pureWhite.withValues(alpha: 0.45),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    if (!_levelUp) return chip;
+    return chip
+        .animate(key: ValueKey('lvl-${_engine.level}'))
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          duration: 260.ms,
+          curve: Curves.easeOutBack,
+        )
+        .then()
+        .tint(color: AppColors.plasmaYellow, duration: 200.ms);
+  }
+
+  Widget _livesRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_engine.lives, (i) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 1.5),
+          child: Icon(
+            Icons.favorite,
+            size: 14,
+            color: AppColors.accentRed,
+          ),
+        );
+      }),
+    );
+  }
+
   Widget _equationDisplay() {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
-        key: ValueKey('q-$_round'),
+        key: ValueKey('q-${_engine.round}'),
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
@@ -313,7 +368,7 @@ class _QuickMathGameState extends State<QuickMathGame> {
         ],
       ),
     )
-        .animate(key: ValueKey('anim-$_round'))
+        .animate(key: ValueKey('anim-${_engine.round}'))
         .fadeIn(duration: 220.ms)
         .slideY(begin: 0.04, end: 0, duration: 260.ms, curve: Curves.easeOut);
   }
@@ -348,7 +403,7 @@ class _QuickMathGameState extends State<QuickMathGame> {
     }
     return Text(
       '${_q.answer}',
-      key: ValueKey('answer-$_round'),
+      key: ValueKey('answer-${_engine.round}'),
       style: const TextStyle(
         fontSize: 88,
         fontWeight: FontWeight.w600,
@@ -440,14 +495,13 @@ class _QuickMathGameState extends State<QuickMathGame> {
   }
 
   Widget _resultView() {
-    final accuracy = (_correct / totalRounds * 100).round();
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'aniqlik',
+            L10n.t('game.over'),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.5),
               fontSize: 12,
@@ -456,46 +510,42 @@ class _QuickMathGameState extends State<QuickMathGame> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '$accuracy',
-                style: const TextStyle(
-                  fontSize: 144,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen,
-                  letterSpacing: -0.04,
-                  height: 1.0,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-              Text(
-                '%',
-                style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neuronGreen.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
+          Text(
+            '${_engine.score}',
+            style: const TextStyle(
+              fontSize: 128,
+              fontWeight: FontWeight.w600,
+              color: AppColors.neuronGreen,
+              letterSpacing: -0.04,
+              height: 1.0,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           )
               .animate()
               .fadeIn()
               .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutQuart),
-          const SizedBox(height: 48),
-          _statRow('To\'g\'ri', '$_correct / $totalRounds'),
+          Text(
+            L10n.t('game.score'),
+            style: TextStyle(
+              color: AppColors.neuronGreen.withValues(alpha: 0.6),
+              fontSize: 13,
+              letterSpacing: 3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 40),
+          _statRow(L10n.t('game.bestLevel'), '${_engine.level}'),
           const SizedBox(height: 10),
-          _statRow('Xato', '$_wrong'),
+          _statRow(L10n.t('game.bestStreak'), '${_engine.bestStreak}'),
+          const SizedBox(height: 10),
+          _statRow(L10n.t('game.rounds'), '${_engine.round}'),
           const SizedBox(height: 48),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _restart,
-                child: const Text('Yana'),
+                child: Text(L10n.t('game.again')),
               ),
               const SizedBox(width: 12),
               OutlinedButton(
@@ -509,7 +559,7 @@ class _QuickMathGameState extends State<QuickMathGame> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Chiqish'),
+                child: Text(L10n.t('game.exit')),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/editorial.dart';
 
@@ -21,38 +22,40 @@ class AcademyScreen extends StatelessWidget {
               const SizedBox(height: 40),
               _selfRecord(),
               const SizedBox(height: 40),
-              const SectionHeader(index: 'TEZ ORADA', title: 'Musobaqalar'),
+              SectionHeader(
+                  index: L10n.t('garden.soon'),
+                  title: L10n.t('academy.competitions')),
               const SizedBox(height: 24),
               _featureRow(
                 index: 1,
                 emoji: '🏆',
-                title: 'Haftalik reyting',
-                category: 'Reyting',
-                description: 'Shahar va yosh guruhi ichida joyingiz.',
+                title: L10n.t('academy.f1.title'),
+                category: L10n.t('academy.f1.cat'),
+                description: L10n.t('academy.f1.desc'),
                 accent: AppColors.plasmaYellow,
               ),
               _featureRow(
                 index: 2,
                 emoji: '⚔️',
-                title: 'Duel',
-                category: 'Musobaqa',
-                description: 'Do\'st bilan real vaqtda musobaqa.',
+                title: L10n.t('academy.f2.title'),
+                category: L10n.t('academy.f2.cat'),
+                description: L10n.t('academy.f2.desc'),
                 accent: AppColors.accentRed,
               ),
               _featureRow(
                 index: 3,
                 emoji: '👥',
-                title: 'Klub',
-                category: 'Jamoa',
-                description: 'Hamfikrlar bilan suhbat va mini-darslar.',
+                title: L10n.t('academy.f3.title'),
+                category: L10n.t('academy.f3.cat'),
+                description: L10n.t('academy.f3.desc'),
                 accent: AppColors.neuronGreen,
               ),
               _featureRow(
                 index: 4,
                 emoji: '🎖️',
-                title: 'Klub musobaqasi',
-                category: 'Chaqiriq',
-                description: 'Jamoangiz bilan oylik chaqiriq.',
+                title: L10n.t('academy.f4.title'),
+                category: L10n.t('academy.f4.cat'),
+                description: L10n.t('academy.f4.desc'),
                 accent: AppColors.pureWhite,
               ),
             ],
@@ -77,9 +80,9 @@ class AcademyScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Akademiya',
-          style: TextStyle(
+        Text(
+          L10n.t('nav.academy'),
+          style: const TextStyle(
             fontSize: 44,
             fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
@@ -89,7 +92,7 @@ class AcademyScreen extends StatelessWidget {
         ).animate().fadeIn().slideX(begin: -0.02, end: 0),
         const SizedBox(height: 16),
         Text(
-          'Reyting, duellar va klub',
+          L10n.t('academy.subtitle'),
           style: TextStyle(
             fontSize: 15,
             color: AppColors.pureWhite.withValues(alpha: 0.55),
@@ -105,11 +108,11 @@ class AcademyScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AccentTag(label: 'HOZIRGI HOLAT', color: AppColors.plasmaYellow),
+        AccentTag(label: L10n.t('academy.state'), color: AppColors.plasmaYellow),
         const SizedBox(height: 14),
-        const Text(
-          'O\'zingiz bilan\npoyga.',
-          style: TextStyle(
+        Text(
+          L10n.t('academy.selfRace'),
+          style: const TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
@@ -119,7 +122,7 @@ class AcademyScreen extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          'Har sessiyada yangi rekord o\'rnating. Tez orada do\'stlaringiz qo\'shiladi.',
+          L10n.t('academy.selfRaceDesc'),
           style: TextStyle(
             fontSize: 14,
             color: AppColors.pureWhite.withValues(alpha: 0.55),

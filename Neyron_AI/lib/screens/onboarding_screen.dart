@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/app_state.dart';
 import '../services/i18n.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import '../widgets/hero_characters.dart';
 import 'main_navigation.dart';
@@ -22,7 +23,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _age = 25;
   int _step = 0;
 
-  static const List<String> _stepTitles = ['Tanishuv', 'Ism', 'Yosh', 'Tayyor'];
+  List<String> get _stepTitles => [
+        L10n.t('onb.step.intro'),
+        L10n.t('onb.step.name'),
+        L10n.t('onb.step.age'),
+        L10n.t('onb.step.ready'),
+      ];
   static const int _totalSteps = 4;
 
   @override
@@ -34,6 +40,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _next() => setState(() => _step++);
   void _back() {
     if (_step > 0) setState(() => _step--);
+  }
+
+  void _setLang(String code) {
+    context.read<AppState>().setLanguage(code);
+    setState(() {});
   }
 
   Future<void> _finish() async {
@@ -160,16 +171,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ─── 01 GREETING ─────────────────────────────────────────────
   Widget _greetingStep() {
+    final greeting = L10n.t('onb.greeting')
+        .replaceAll('{prof}', I18n.professorName)
+        .replaceAll('{maryam}', I18n.maryamName);
     return Column(
       children: [
-        const SizedBox(height: 12),
-        const HeroCharacters(size: 240)
+        _langSelector(),
+        const SizedBox(height: 8),
+        const HeroCharacters(size: 220)
             .animate()
             .fadeIn(duration: 700.ms)
             .scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutQuart),
         const Spacer(),
         Text(
-          'Men kamina\n${I18n.professorName}\nva ${I18n.maryamName}.',
+          greeting,
           style: const TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w600,
@@ -186,7 +201,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'Siz aqliy barkamollikka tayyormisiz?',
+            L10n.t('onb.question'),
             style: TextStyle(
               fontSize: 15,
               color: AppColors.pureWhite.withValues(alpha: 0.6),
@@ -195,8 +210,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ).animate(delay: 900.ms).fadeIn(duration: 500.ms),
         ),
         const SizedBox(height: 36),
-        _primaryButton('Boshlash', _next).animate(delay: 1100.ms).fadeIn(),
+        _primaryButton(L10n.t('onb.start'), _next).animate(delay: 1100.ms).fadeIn(),
         const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _langSelector() {
+    Widget chip(String code, String label) {
+      final selected = context.watch<AppState>().languageCode == code;
+      return GestureDetector(
+        onTap: () => _setLang(code),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.neuronGreen.withValues(alpha: 0.18)
+                : AppColors.cosmicMid,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? AppColors.neuronGreen
+                  : AppColors.pureWhite.withValues(alpha: 0.1),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? AppColors.neuronGreen : AppColors.pureWhite,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        chip('uz', 'UZ'),
+        chip('ru', 'RU'),
+        chip('en', 'EN'),
       ],
     );
   }
@@ -209,9 +268,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 24),
         const ProfessorImage(size: 88),
         const SizedBox(height: 36),
-        const Text(
-          'Ismingiz?',
-          style: TextStyle(
+        Text(
+          L10n.t('onb.nameQ'),
+          style: const TextStyle(
             fontSize: 48,
             fontWeight: FontWeight.w600,
             color: AppColors.pureWhite,
@@ -230,7 +289,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             letterSpacing: -0.01,
           ),
           decoration: InputDecoration(
-            hintText: 'sizning ismingiz',
+            hintText: L10n.t('onb.nameHint'),
             hintStyle: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.25),
               fontWeight: FontWeight.w400,
@@ -256,7 +315,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const Spacer(),
         _primaryButton(
-          'Davom etish',
+          L10n.t('onb.continue'),
           _nameController.text.trim().isEmpty ? null : _next,
         ),
         const SizedBox(height: 8),
@@ -271,7 +330,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         const SizedBox(height: 24),
         Text(
-          'Yoshingiz,',
+          L10n.t('onb.ageQ'),
           style: TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w600,
@@ -308,7 +367,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            AgeGroup.fromAge(_age).displayName.toUpperCase(),
+            L10n.t(AgeGroup.fromAge(_age).l10nKey).toUpperCase(),
             style: TextStyle(
               color: AppColors.pureWhite.withValues(alpha: 0.5),
               fontSize: 11,
@@ -338,7 +397,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        _primaryButton('Davom etish', _next),
+        _primaryButton(L10n.t('onb.continue'), _next),
         const SizedBox(height: 8),
       ],
     );
@@ -346,6 +405,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ─── 04 FINISH ───────────────────────────────────────────────
   Widget _finishStep() {
+    final ready = L10n.t('onb.ready').replaceAll('{name}', _nameController.text);
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -355,7 +415,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             .scale(begin: const Offset(0.88, 0.88), curve: Curves.easeOutQuart),
         const Spacer(),
         Text(
-          'Tayyor,\n${_nameController.text}.',
+          ready,
           style: const TextStyle(
             fontSize: 42,
             fontWeight: FontWeight.w600,
@@ -377,7 +437,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                'KABINET OCHIQ',
+                L10n.t('onb.cabinetOpen'),
                 style: TextStyle(
                   color: AppColors.professorWarmth.withValues(alpha: 0.85),
                   fontSize: 11,
@@ -389,7 +449,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ).animate(delay: 700.ms).fadeIn(),
         ),
         const SizedBox(height: 36),
-        _primaryButton('Kirish', _finish).animate(delay: 950.ms).fadeIn(),
+        _primaryButton(L10n.t('onb.enter'), _finish).animate(delay: 950.ms).fadeIn(),
         const SizedBox(height: 8),
       ],
     );
