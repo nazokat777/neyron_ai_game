@@ -6,6 +6,7 @@ import '../services/app_state.dart';
 import '../services/i18n.dart';
 import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/hero_characters.dart';
 import 'chat_screen.dart';
 
@@ -56,7 +57,14 @@ class PlanetScreen extends StatelessWidget {
       children: [
         _pill('🔥', '${profile.streakDays}', L10n.t('planet.day'),
             AppColors.plasmaYellow),
-        _pill('🪙', '${profile.coins}', '', AppColors.neuronGreen),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _pill('🪙', '${profile.coins}', '', AppColors.neuronGreen),
+            const SizedBox(width: 12),
+            const BrainMark(size: 24),
+          ],
+        ),
       ],
     );
   }

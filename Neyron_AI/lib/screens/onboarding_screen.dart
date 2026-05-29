@@ -6,6 +6,7 @@ import '../services/app_state.dart';
 import '../services/i18n.dart';
 import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/hero_characters.dart';
 import 'main_navigation.dart';
 
@@ -148,7 +149,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 36),
+          const SizedBox(
+            width: 36,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: BrainMark(size: 22),
+            ),
+          ),
         ],
       ),
     );

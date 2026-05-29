@@ -6,6 +6,7 @@ import '../services/app_state.dart';
 import '../services/i18n.dart';
 import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/hero_characters.dart';
 import 'onboarding_screen.dart';
 
@@ -80,6 +81,8 @@ class ProfileScreen extends StatelessWidget {
                 color: AppColors.pureWhite.withValues(alpha: 0.1),
               ),
             ),
+            const SizedBox(width: 12),
+            const BrainMark(size: 24),
           ],
         ),
         const SizedBox(height: 16),

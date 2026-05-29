@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/hero_characters.dart';
 import 'main_navigation.dart';
 import 'onboarding_screen.dart';
@@ -206,6 +208,23 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                       ],
                     ).animate(delay: 900.ms).fadeIn(duration: 600.ms),
+                    const SizedBox(height: 26),
+                    // Miyani rivojlantiruvchi o'yin — neyron emblema + tagline
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const BrainMark(size: 22, opacity: 0.8),
+                        const SizedBox(width: 10),
+                        Text(
+                          L10n.t('app.tagline'),
+                          style: TextStyle(
+                            color: AppColors.pureWhite.withValues(alpha: 0.6),
+                            fontSize: 13,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ).animate(delay: 1100.ms).fadeIn(duration: 600.ms),
                   ],
                 ),
               ),

@@ -69,15 +69,21 @@ class AcademyScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '04',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.pureWhite.withValues(alpha: 0.4),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 2,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+        Row(
+          children: [
+            Text(
+              '04',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.pureWhite.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const Spacer(),
+            const BrainMark(size: 24),
+          ],
         ),
         const SizedBox(height: 4),
         Text(

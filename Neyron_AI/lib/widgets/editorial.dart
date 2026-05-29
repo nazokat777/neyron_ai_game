@@ -142,3 +142,96 @@ class _DotGridPainter extends CustomPainter {
   bool shouldRepaint(_DotGridPainter old) =>
       old.spacing != spacing || old.dotSize != dotSize || old.color != color;
 }
+
+/// Miya emblemasi — jonli neyron-tarmoq (CustomPainter, impuls to'lqini).
+/// "Neyron AI" — miya rivojlantiruvchi o'yin mavzusini bildiradi.
+class BrainMark extends StatefulWidget {
+  final double size;
+  final double opacity;
+  const BrainMark({super.key, this.size = 26, this.opacity = 0.7});
+
+  @override
+  State<BrainMark> createState() => _BrainMarkState();
+}
+
+class _BrainMarkState extends State<BrainMark>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) => CustomPaint(
+          painter: _NeuralEmblemPainter(t: _c.value, opacity: widget.opacity),
+        ),
+      ),
+    );
+  }
+}
+
+class _NeuralEmblemPainter extends CustomPainter {
+  final double t; // 0..1 puls
+  final double opacity;
+  _NeuralEmblemPainter({required this.t, required this.opacity});
+
+  // Miyaga o'xshash ikki-pallali neyron klasteri (normallashtirilgan)
+  static const List<Offset> _nodes = [
+    Offset(0.30, 0.30),
+    Offset(0.64, 0.24),
+    Offset(0.20, 0.58),
+    Offset(0.50, 0.50),
+    Offset(0.80, 0.56),
+    Offset(0.44, 0.80),
+  ];
+  static const List<List<int>> _edges = [
+    [0, 1], [0, 3], [1, 3], [1, 4], [2, 3], [3, 4], [3, 5], [2, 5], [4, 5],
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Offset p(int i) =>
+        Offset(_nodes[i].dx * size.width, _nodes[i].dy * size.height);
+    final base = AppColors.neuronGreen;
+
+    final line = Paint()
+      ..color = base.withValues(alpha: opacity * 0.45)
+      ..strokeWidth = size.width * 0.035
+      ..strokeCap = StrokeCap.round;
+    for (final e in _edges) {
+      canvas.drawLine(p(e[0]), p(e[1]), line);
+    }
+
+    final r = size.width * 0.075;
+    for (var i = 0; i < _nodes.length; i++) {
+      // Har nuqta navbatma-navbat yorishadi — "impuls" to'lqini
+      final phase = (t + i / _nodes.length) % 1.0;
+      final glow = 0.55 + 0.45 * (1 - (phase - 0.5).abs() * 2);
+      final dot = Paint()
+        ..color = base.withValues(alpha: (opacity * glow).clamp(0.0, 1.0));
+      canvas.drawCircle(p(i), r * (0.85 + 0.35 * glow), dot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeuralEmblemPainter old) =>
+      old.t != t || old.opacity != opacity;
+}

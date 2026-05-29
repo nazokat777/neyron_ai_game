@@ -27,6 +27,7 @@ class L10n {
       'lang.en': 'Inglizcha',
       'lang.title': 'Til',
       'lang.choose': 'Tilni tanlang',
+      'app.tagline': 'Miyani rivojlantiruvchi mashqlar',
       // Onboarding
       'onb.step.intro': 'Tanishuv',
       'onb.step.name': 'Ism',
@@ -85,6 +86,7 @@ class L10n {
       'lang.en': 'Английский',
       'lang.title': 'Язык',
       'lang.choose': 'Выберите язык',
+      'app.tagline': 'Упражнения для развития мозга',
       // Onboarding
       'onb.step.intro': 'Знакомство',
       'onb.step.name': 'Имя',
@@ -139,6 +141,7 @@ class L10n {
       'lang.en': 'English',
       'lang.title': 'Language',
       'lang.choose': 'Choose language',
+      'app.tagline': 'Brain-training exercises',
       // Onboarding
       'onb.step.intro': 'Intro',
       'onb.step.name': 'Name',

@@ -157,6 +157,7 @@ class _FlankerTaskGameState extends State<FlankerTaskGame> {
         title: Text(L10n.t('flanker.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [Padding(padding: EdgeInsets.only(right: 14), child: Center(child: BrainMark(size: 22)))],
       ),
       body: Stack(
         children: [

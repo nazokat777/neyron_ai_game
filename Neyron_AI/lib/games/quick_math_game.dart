@@ -207,6 +207,7 @@ class _QuickMathGameState extends State<QuickMathGame> {
         title: Text(L10n.t('math.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [Padding(padding: EdgeInsets.only(right: 14), child: Center(child: BrainMark(size: 22)))],
       ),
       body: Stack(
         children: [

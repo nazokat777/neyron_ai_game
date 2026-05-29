@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/game_instruction_overlay.dart';
 import '../games/shulte_game.dart';
 import '../games/memory_matrix_game.dart';
@@ -43,15 +44,21 @@ class LabScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '05',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.pureWhite.withValues(alpha: 0.4),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 2,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+        Row(
+          children: [
+            Text(
+              '05',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.pureWhite.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const Spacer(),
+            const BrainMark(size: 24),
+          ],
         ),
         const SizedBox(height: 4),
         Text(

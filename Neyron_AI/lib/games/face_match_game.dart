@@ -220,6 +220,7 @@ class _FaceMatchGameState extends State<FaceMatchGame> {
         title: Text(L10n.t('face.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [Padding(padding: EdgeInsets.only(right: 14), child: Center(child: BrainMark(size: 22)))],
       ),
       body: Stack(
         children: [

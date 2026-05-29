@@ -218,6 +218,7 @@ class _DualNBackGameState extends State<DualNBackGame> {
         title: Text(L10n.t('nback.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [Padding(padding: EdgeInsets.only(right: 14), child: Center(child: BrainMark(size: 22)))],
       ),
       body: Stack(
         children: [
