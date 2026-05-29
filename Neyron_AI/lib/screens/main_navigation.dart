@@ -3,7 +3,6 @@ import '../services/l10n.dart';
 import '../theme/app_colors.dart';
 import 'planet_screen.dart';
 import 'lab_screen.dart';
-import 'garden_screen.dart';
 import 'academy_screen.dart';
 import 'profile_screen.dart';
 
@@ -20,7 +19,6 @@ class _MainNavigationState extends State<MainNavigation> {
   final _screens = const [
     PlanetScreen(),
     LabScreen(),
-    GardenScreen(),
     AcademyScreen(),
     ProfileScreen(),
   ];
@@ -28,7 +26,6 @@ class _MainNavigationState extends State<MainNavigation> {
   static const _items = [
     _NavItem(Icons.public_rounded, 'nav.planet'),
     _NavItem(Icons.science_rounded, 'nav.lab'),
-    _NavItem(Icons.local_florist_rounded, 'nav.garden'),
     _NavItem(Icons.emoji_events_rounded, 'nav.academy'),
     _NavItem(Icons.person_rounded, 'nav.profile'),
   ];
