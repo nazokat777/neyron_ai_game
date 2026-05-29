@@ -159,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const HeroCharacters(size: 220)
+                    const HeroCharacters(size: 168)
                         .animate()
                         .fadeIn(duration: 900.ms)
                         .scale(
@@ -168,7 +168,15 @@ class _SplashScreenState extends State<SplashScreen> {
                           curve: Curves.easeOutQuart,
                           duration: 900.ms,
                         ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
+                    const NeuralBrain(size: 104)
+                        .animate(delay: 350.ms)
+                        .fadeIn(duration: 700.ms)
+                        .scale(
+                          begin: const Offset(0.8, 0.8),
+                          curve: Curves.easeOutBack,
+                        ),
+                    const SizedBox(height: 22),
                     const Text(
                       'Neyron AI',
                       style: TextStyle(

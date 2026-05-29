@@ -353,3 +353,121 @@ class _NeuralNetPainter extends CustomPainter {
   bool shouldRepaint(covariant _NeuralNetPainter old) =>
       old.t != t || old.intensity != intensity;
 }
+
+/// Neyronlardan tashkil topgan jonli miya tasviri (CustomPainter).
+/// Ikki yarim shar + burmalar (gyri) + pulslanadigan neyron tugunlar.
+/// Asset kerak emas; "miya/neyron" mavzusini aniq va kreativ ko'rsatadi.
+class NeuralBrain extends StatefulWidget {
+  final double size;
+  const NeuralBrain({super.key, this.size = 140});
+
+  @override
+  State<NeuralBrain> createState() => _NeuralBrainState();
+}
+
+class _NeuralBrainState extends State<NeuralBrain>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(seconds: 3))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) =>
+            CustomPaint(painter: _NeuralBrainPainter(_c.value)),
+      ),
+    );
+  }
+}
+
+class _NeuralBrainPainter extends CustomPainter {
+  final double t;
+  _NeuralBrainPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final green = AppColors.neuronGreen;
+
+    // Yumshoq nur (glow)
+    canvas.drawCircle(
+      Offset(w / 2, h / 2),
+      w * 0.42,
+      Paint()
+        ..color = green.withValues(alpha: 0.10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+    );
+
+    final lobeW = w * 0.40, lobeH = h * 0.72;
+    final ly = h * 0.5;
+    final left = Offset(w * 0.31, ly);
+    final right = Offset(w * 0.69, ly);
+
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.022
+      ..strokeCap = StrokeCap.round
+      ..color = green.withValues(alpha: 0.9);
+    canvas.drawOval(
+        Rect.fromCenter(center: left, width: lobeW, height: lobeH), outline);
+    canvas.drawOval(
+        Rect.fromCenter(center: right, width: lobeW, height: lobeH), outline);
+
+    // Burmalar (gyri) + tugun nuqtalari
+    final fold = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.014
+      ..strokeCap = StrokeCap.round
+      ..color = green.withValues(alpha: 0.45);
+
+    final nodePts = <Offset>[];
+    for (final c in [left, right]) {
+      for (var k = 0; k < 4; k++) {
+        final yy = c.dy + lobeH * (-0.28 + k * 0.18);
+        final x0 = c.dx - lobeW * 0.32;
+        final x1 = c.dx + lobeW * 0.32;
+        final ctrlY = yy + (k.isEven ? -1 : 1) * lobeH * 0.07;
+        canvas.drawPath(
+          Path()
+            ..moveTo(x0, yy)
+            ..quadraticBezierTo((x0 + x1) / 2, ctrlY, x1, yy),
+          fold,
+        );
+        nodePts..add(Offset(x0, yy))..add(Offset(x1, yy));
+      }
+    }
+
+    // Pulslanadigan neyron tugunlar (neyron ranglar)
+    for (var i = 0; i < nodePts.length; i++) {
+      final phase = (t + i / nodePts.length) % 1.0;
+      final g = 0.5 + 0.5 * sin(phase * 2 * pi);
+      final col = i % 5 == 0
+          ? AppColors.plasmaYellow
+          : (i % 7 == 0 ? AppColors.gameBlue : green);
+      canvas.drawCircle(
+        nodePts[i],
+        w * 0.02 * (0.8 + 0.6 * g),
+        Paint()..color = col.withValues(alpha: (0.4 + 0.5 * g).clamp(0.0, 1.0)),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeuralBrainPainter old) => old.t != t;
+}
