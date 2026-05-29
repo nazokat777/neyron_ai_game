@@ -12,7 +12,9 @@ class AcademyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-      child: SafeArea(
+      child: NeuralBackdrop(
+        intensity: 0.7,
+        child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           child: Column(
@@ -61,6 +63,7 @@ class AcademyScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

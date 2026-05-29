@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -234,4 +235,121 @@ class _NeuralEmblemPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _NeuralEmblemPainter old) =>
       old.t != t || old.opacity != opacity;
+}
+
+/// Jonli neyron tarmoq foni — butun ekran bo'ylab harakatlanuvchi neyronlar,
+/// bog'lanishlar va impuls uchqunlari. "Neyron AI / miya" mavzusini kuchli
+/// bildiradi. Orqa fonga qo'yiladi (child ustida ko'rinadi).
+class NeuralBackdrop extends StatefulWidget {
+  final Widget? child;
+  final double intensity; // 0..1 — umumiy ko'rinish kuchi
+  const NeuralBackdrop({super.key, this.child, this.intensity = 1.0});
+
+  @override
+  State<NeuralBackdrop> createState() => _NeuralBackdropState();
+}
+
+class _NeuralBackdropState extends State<NeuralBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(seconds: 9))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) => CustomPaint(
+              painter: _NeuralNetPainter(t: _c.value, intensity: widget.intensity),
+            ),
+          ),
+        ),
+        if (widget.child != null) widget.child!,
+      ],
+    );
+  }
+}
+
+class _NeuralNetPainter extends CustomPainter {
+  final double t; // 0..1 loop
+  final double intensity;
+  _NeuralNetPainter({required this.t, required this.intensity});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cols = 5;
+    final rows = (size.height / size.width * cols * 1.3).clamp(6, 14).round();
+    final n = cols * rows;
+    final cw = size.width / cols;
+    final ch = size.height / rows;
+    const twoPi = 2 * pi;
+
+    final pos = List<Offset>.generate(n, (i) {
+      final c = i % cols, r = i ~/ cols;
+      final bx = (c + 0.5) * cw;
+      final by = (r + 0.5) * ch;
+      final dx = sin(i * 1.7 + t * twoPi) * cw * 0.18;
+      final dy = cos(i * 2.3 + t * twoPi) * ch * 0.18;
+      return Offset(bx + dx, by + dy);
+    });
+
+    Color nodeColor(int i) {
+      if (i % 9 == 0) return AppColors.plasmaYellow;
+      if (i % 7 == 0) return AppColors.gameBlue;
+      return AppColors.neuronGreen;
+    }
+
+    final edgePaint = Paint()
+      ..strokeWidth = 1
+      ..color = AppColors.neuronGreen.withValues(alpha: 0.10 * intensity);
+
+    var seed = 0;
+    void edge(int a, int b, int s) {
+      canvas.drawLine(pos[a], pos[b], edgePaint);
+      // bog'lanish bo'ylab harakatlanuvchi impuls uchquni
+      final frac = (t * 2 + s * 0.137) % 1.0;
+      final p = Offset.lerp(pos[a], pos[b], frac)!;
+      canvas.drawCircle(
+        p,
+        1.8,
+        Paint()..color = nodeColor(s).withValues(alpha: 0.55 * intensity),
+      );
+    }
+
+    for (var i = 0; i < n; i++) {
+      final c = i % cols;
+      if (c < cols - 1) edge(i, i + 1, seed++);
+      if (i + cols < n) edge(i, i + cols, seed++);
+    }
+
+    for (var i = 0; i < n; i++) {
+      final glow = 0.5 +
+          0.5 *
+              sin(((pos[i].dx + pos[i].dy) / (size.width + size.height)) *
+                      twoPi *
+                      2 -
+                  t * twoPi * 2);
+      final dot = Paint()
+        ..color = nodeColor(i).withValues(alpha: (0.16 + 0.5 * glow) * intensity);
+      canvas.drawCircle(pos[i], 2.0 + 2.6 * glow, dot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeuralNetPainter old) =>
+      old.t != t || old.intensity != intensity;
 }

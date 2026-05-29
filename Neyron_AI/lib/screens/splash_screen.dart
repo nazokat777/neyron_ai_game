@@ -133,7 +133,9 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-        child: SafeArea(
+        child: NeuralBackdrop(
+          intensity: 0.9,
+          child: SafeArea(
           child: Stack(
             children: [
               // Tepa-chap: editorial index
@@ -253,6 +255,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

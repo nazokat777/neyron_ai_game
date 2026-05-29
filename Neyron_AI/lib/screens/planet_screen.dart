@@ -26,7 +26,9 @@ class PlanetScreen extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-      child: SafeArea(
+      child: NeuralBackdrop(
+        intensity: 0.7,
+        child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           child: Column(
@@ -46,6 +48,7 @@ class PlanetScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

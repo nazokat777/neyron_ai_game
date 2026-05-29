@@ -176,14 +176,7 @@ class _NumberSpanGameState extends State<NumberSpanGame> {
           Container(
             decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
           ),
-          const Positioned.fill(
-            child: DotGridBackdrop(
-              spacing: 28,
-              dotSize: 1.0,
-              alpha: 0.06,
-              child: SizedBox.expand(),
-            ),
-          ),
+          const Positioned.fill(child: NeuralBackdrop(intensity: 0.45)),
           SafeArea(
             child: Center(
               child: ConstrainedBox(

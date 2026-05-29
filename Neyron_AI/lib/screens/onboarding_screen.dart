@@ -74,24 +74,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _topBar(),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
-                  child: AnimatedSwitcher(
-                    duration: 360.ms,
-                    switchInCurve: Curves.easeOutQuart,
-                    child: KeyedSubtree(
-                      key: ValueKey(_step),
-                      child: _buildStep(),
+        child: NeuralBackdrop(
+          intensity: 0.85,
+          child: SafeArea(
+            child: Column(
+              children: [
+                _topBar(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
+                    child: AnimatedSwitcher(
+                      duration: 360.ms,
+                      switchInCurve: Curves.easeOutQuart,
+                      child: KeyedSubtree(
+                        key: ValueKey(_step),
+                        child: _buildStep(),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -204,7 +207,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             .animate(delay: 500.ms)
             .fadeIn(duration: 600.ms)
             .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuart),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BrainMark(size: 22, opacity: 0.95),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  L10n.t('app.tagline'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.neuronGreen,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ).animate(delay: 700.ms).fadeIn(duration: 500.ms),
+        ),
+        const SizedBox(height: 18),
         Align(
           alignment: Alignment.centerLeft,
           child: Text(

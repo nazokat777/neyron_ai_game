@@ -6,6 +6,7 @@ import '../services/app_state.dart';
 import '../services/i18n.dart';
 import '../services/l10n.dart';
 import '../theme/app_colors.dart';
+import '../widgets/editorial.dart';
 import '../widgets/hero_characters.dart';
 
 /// Chat — Professor bilan suhbat.
@@ -57,7 +58,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.cosmicGradient),
-        child: SafeArea(
+        child: NeuralBackdrop(
+          intensity: 0.7,
+          child: SafeArea(
           child: Column(
             children: [
               _editorialHeader(context),
@@ -70,6 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
               _inputBar(state),
             ],
           ),
+        ),
         ),
       ),
     );
