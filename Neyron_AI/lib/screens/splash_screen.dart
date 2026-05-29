@@ -169,7 +169,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           duration: 900.ms,
                         ),
                     const SizedBox(height: 20),
-                    const NeuralBrain(size: 104)
+                    const BrainMark(size: 88, opacity: 0.95)
                         .animate(delay: 350.ms)
                         .fadeIn(duration: 700.ms)
                         .scale(
