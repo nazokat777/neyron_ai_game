@@ -315,7 +315,7 @@ class _NeuralNetPainter extends CustomPainter {
 
     final edgePaint = Paint()
       ..strokeWidth = 1
-      ..color = AppColors.neuronGreen.withValues(alpha: 0.10 * intensity);
+      ..color = AppColors.neuronGreen.withValues(alpha: 0.05 * intensity);
 
     var seed = 0;
     void edge(int a, int b, int s) {
@@ -325,8 +325,8 @@ class _NeuralNetPainter extends CustomPainter {
       final p = Offset.lerp(pos[a], pos[b], frac)!;
       canvas.drawCircle(
         p,
-        1.8,
-        Paint()..color = nodeColor(s).withValues(alpha: 0.55 * intensity),
+        1.4,
+        Paint()..color = nodeColor(s).withValues(alpha: 0.30 * intensity),
       );
     }
 
@@ -344,8 +344,8 @@ class _NeuralNetPainter extends CustomPainter {
                       2 -
                   t * twoPi * 2);
       final dot = Paint()
-        ..color = nodeColor(i).withValues(alpha: (0.16 + 0.5 * glow) * intensity);
-      canvas.drawCircle(pos[i], 2.0 + 2.6 * glow, dot);
+        ..color = nodeColor(i).withValues(alpha: (0.08 + 0.26 * glow) * intensity);
+      canvas.drawCircle(pos[i], 1.5 + 1.9 * glow, dot);
     }
   }
 
