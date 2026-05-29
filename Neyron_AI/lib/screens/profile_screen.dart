@@ -34,9 +34,9 @@ class ProfileScreen extends StatelessWidget {
             children: [
               _header(profile),
               const SizedBox(height: 40),
-              _section('01', L10n.t('profile.sec.apprentice')),
+              _section('01', L10n.t('profile.sec.assistant')),
               const SizedBox(height: 20),
-              _maryamSection(profile, level),
+              _assistantSection(profile, level),
               const SizedBox(height: 40),
               _section('02', L10n.t('profile.sec.stats')),
               const SizedBox(height: 20),
@@ -141,13 +141,15 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ─── 01 Maryam — hero treatment ──────────────────────────────
-  Widget _maryamSection(UserProfile profile, int level) {
+  // ─── 01 Maryam — yordamchi (kunlik maslahat) ──────────────────
+  Widget _assistantSection(UserProfile profile, int level) {
+    // Kunga qarab almashinadigan maslahat (1..6)
+    final tip = L10n.t('maryam.tip${(DateTime.now().day % 6) + 1}');
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        MaryamImage(size: 110, level: level, animated: true),
-        const SizedBox(width: 20),
+        MaryamImage(size: 92, level: level, animated: true),
+        const SizedBox(width: 18),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,31 +164,24 @@ class ProfileScreen extends StatelessWidget {
                   height: 1.0,
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '$level',
-                    style: const TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.professorWarmth,
-                      letterSpacing: -0.04,
-                      height: 1.0,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    ' / 100',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.pureWhite.withValues(alpha: 0.35),
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                L10n.t('maryam.role').toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.professorWarmth.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                tip,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.pureWhite.withValues(alpha: 0.7),
+                  height: 1.5,
+                ),
               ),
             ],
           ),

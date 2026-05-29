@@ -64,6 +64,20 @@ class L10n {
       'nav.garden': 'Bog\'',
       'nav.academy': 'Akademiya',
       'nav.profile': 'Profil',
+      // Maryam — yordamchi
+      'profile.sec.assistant': 'Yordamchi',
+      'maryam.role': 'Yordamchingiz',
+      'maryam.tip1':
+          'Har kuni 5 daqiqa muntazam mashq — haftada bir martalik uzun mashqdan foydaliroq.',
+      'maryam.tip2':
+          'Charchasangiz, biroz dam oling — tetik miya tezroq o\'rganadi.',
+      'maryam.tip3':
+          'Xato qilsangiz xafa bo\'lmang — miya aynan xatolardan o\'sadi.',
+      'maryam.tip4':
+          'Yangi narsa o\'rganish neyron bog\'lanishlarni mustahkamlaydi.',
+      'maryam.tip5': 'Yetarli uyqu — xotira mustahkamlanishining asosi.',
+      'maryam.tip6':
+          'Avval oson, keyin qiyin — qadamba-qadam oldinga boring.',
     },
     'ru': {
       'lang.uz': 'Узбекский',
@@ -106,6 +120,18 @@ class L10n {
       'nav.garden': 'Сад',
       'nav.academy': 'Академия',
       'nav.profile': 'Профиль',
+      // Maryam — помощник
+      'profile.sec.assistant': 'Помощник',
+      'maryam.role': 'Ваш помощник',
+      'maryam.tip1':
+          'Каждый день по 5 минут полезнее, чем одна длинная тренировка в неделю.',
+      'maryam.tip2': 'Устали — немного отдохните: свежий ум учится быстрее.',
+      'maryam.tip3':
+          'Не расстраивайтесь из-за ошибок — именно на них растёт мозг.',
+      'maryam.tip4': 'Изучение нового укрепляет нейронные связи.',
+      'maryam.tip5': 'Хороший сон — основа закрепления памяти.',
+      'maryam.tip6':
+          'Сначала лёгкое, потом сложное — двигайтесь шаг за шагом.',
     },
     'en': {
       'lang.uz': 'Uzbek',
@@ -148,6 +174,16 @@ class L10n {
       'nav.garden': 'Garden',
       'nav.academy': 'Academy',
       'nav.profile': 'Profile',
+      // Maryam — assistant
+      'profile.sec.assistant': 'Assistant',
+      'maryam.role': 'Your assistant',
+      'maryam.tip1': 'Five minutes every day beats one long session per week.',
+      'maryam.tip2': 'Tired? Take a short break — a fresh mind learns faster.',
+      'maryam.tip3':
+          'Don\'t worry about mistakes — that\'s exactly how the brain grows.',
+      'maryam.tip4': 'Learning something new strengthens neural connections.',
+      'maryam.tip5': 'Good sleep is the foundation of memory consolidation.',
+      'maryam.tip6': 'Easy first, hard later — progress step by step.',
     },
   };
 }
